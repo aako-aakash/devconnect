@@ -1,51 +1,62 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import ProtectedRoute from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Feed from './pages/Feed'
 import Profile from './pages/Profile'
-import NotFound from './pages/NotFound'
 
-function AppLayout({ children }) {
-  return (
-    <div className="min-h-screen">
-      <Navbar />
-      <main>{children}</main>
+/* ── Route guards ─────────────────────────────────────────────── */
+
+function RequireAuth({ children }) {
+  const { user, ready } = useAuth()
+  if (!ready) return (
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <svg style={{ animation:'spin 0.8s linear infinite' }} width="32" height="32" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="#334155" strokeWidth="3" />
+        <path d="M12 2a10 10 0 0 1 10 10" stroke="#6366f1" strokeWidth="3" strokeLinecap="round" />
+      </svg>
     </div>
   )
+  if (!user) return <Navigate to="/login" replace />
+  return children
 }
 
-function AuthRedirect({ children }) {
-  const { user, loading } = useAuth()
-  if (loading) return null
+function RedirectIfAuth({ children }) {
+  const { user, ready } = useAuth()
+  if (!ready) return null
   if (user) return <Navigate to="/feed" replace />
   return children
 }
 
+/* ── Layout ───────────────────────────────────────────────────── */
+
+function Layout({ children }) {
+  return (
+    <div style={{ minHeight:'100vh' }}>
+      <Navbar />
+      {children}
+    </div>
+  )
+}
+
+/* ── App ──────────────────────────────────────────────────────── */
+
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public */}
-      <Route path="/login"  element={<AuthRedirect><Login /></AuthRedirect>} />
-      <Route path="/signup" element={<AuthRedirect><Signup /></AuthRedirect>} />
+      <Route path="/login"  element={<RedirectIfAuth><Login /></RedirectIfAuth>} />
+      <Route path="/signup" element={<RedirectIfAuth><Signup /></RedirectIfAuth>} />
 
-      {/* Protected */}
       <Route path="/feed" element={
-        <ProtectedRoute>
-          <AppLayout><Feed /></AppLayout>
-        </ProtectedRoute>
+        <RequireAuth><Layout><Feed /></Layout></RequireAuth>
       } />
       <Route path="/profile/:userId" element={
-        <ProtectedRoute>
-          <AppLayout><Profile /></AppLayout>
-        </ProtectedRoute>
+        <RequireAuth><Layout><Profile /></Layout></RequireAuth>
       } />
 
-      {/* Redirects */}
       <Route path="/"   element={<Navigate to="/feed" replace />} />
-      <Route path="*"   element={<NotFound />} />
+      <Route path="*"   element={<Navigate to="/feed" replace />} />
     </Routes>
   )
 }

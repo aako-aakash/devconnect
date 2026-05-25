@@ -1,194 +1,104 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Loader2, Code2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { authAPI } from '../api'
 import { useAuth } from '../context/AuthContext'
-
-const rules = [
-  { test: v => v.length >= 6, label: 'At least 6 characters' },
-  { test: v => /[A-Z]/.test(v), label: 'One uppercase letter' },
-  { test: v => /\d/.test(v), label: 'One number' },
-]
+import { Spinner } from '../components/helpers'
 
 export default function Signup() {
   const { login }             = useAuth()
-  const navigate              = useNavigate()
-  const [form, setForm]       = useState({ name: '', email: '', password: '' })
+  const nav                   = useNavigate()
+  const [form, setForm]       = useState({ name:'', email:'', password:'' })
   const [showPw, setShowPw]   = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
 
-  const handleChange = (e) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
-    setError('')
-  }
+  const set = k => e => { setForm(f => ({ ...f, [k]: e.target.value })); setError('') }
 
-  const handleSubmit = async (e) => {
+  const submit = async e => {
     e.preventDefault()
-    if (!form.name.trim() || !form.email || !form.password) {
-      setError('Please fill in all fields'); return
-    }
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters'); return
-    }
-    setLoading(true)
-    setError('')
+    if (!form.name.trim() || !form.email || !form.password) { setError('Fill in all fields'); return }
+    if (form.password.length < 6) { setError('Password must be at least 6 characters'); return }
+    setLoading(true); setError('')
     try {
       const { data } = await authAPI.signup(form)
       login(data.access_token, data.user)
-      navigate('/feed', { replace: true })
+      nav('/feed', { replace: true })
     } catch (err) {
-      setError(err?.response?.data?.detail || 'Signup failed. Please try again.')
-    } finally {
-      setLoading(false)
-    }
+      setError(err?.response?.data?.detail || 'Signup failed. Try again.')
+    } finally { setLoading(false) }
   }
 
-  const pwStrength = rules.filter(r => r.test(form.password)).length
-  const strengthColors = ['', 'bg-red-500', 'bg-amber-400', 'bg-emerald-400']
-  const strengthLabels = ['', 'Weak', 'Fair', 'Strong']
+  const strength = [form.password.length>=6, /[A-Z]/.test(form.password), /\d/.test(form.password)].filter(Boolean).length
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-dark-800 items-center justify-center p-12">
-        <div className="absolute inset-0"
-          style={{ backgroundImage: `radial-gradient(ellipse 80% 60% at 50% 40%, rgba(61,109,247,0.18), transparent)` }} />
-        <div className="absolute inset-0 opacity-[0.04]"
-          style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-
-        <div className="relative z-10 max-w-sm">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="h-12 w-12 rounded-2xl bg-brand-600 flex items-center justify-center glow">
-              <Code2 className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-3xl font-extrabold text-gradient">DevConnect</span>
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
+      <div style={{ width:'100%', maxWidth:420 }}>
+        {/* Logo */}
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:32, justifyContent:'center' }}>
+          <div style={{ width:40, height:40, borderRadius:11, background:'#6366f1', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 16px rgba(99,102,241,0.4)' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
+              <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+            </svg>
           </div>
-          <h2 className="text-4xl font-bold text-slate-100 leading-tight mb-6">
-            Join thousands of student devs.
-          </h2>
-          <div className="card p-4 space-y-2">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">What you'll get</p>
-            {[
-              'A personal dev profile & feed',
-              'Like and comment on projects',
-              'Get notified when people engage',
-              'Search the whole community',
-            ].map(item => (
-              <div key={item} className="flex items-center gap-2.5">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0" />
-                <span className="text-sm text-slate-300">{item}</span>
-              </div>
-            ))}
-          </div>
+          <span style={{ fontWeight:800, fontSize:22, color:'#e2e8f0', letterSpacing:'-0.4px' }}>DevConnect</span>
         </div>
-      </div>
 
-      {/* Right: form */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-md slide-up">
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="h-9 w-9 rounded-xl bg-brand-600 flex items-center justify-center">
-              <Code2 className="h-5 w-5 text-white" />
+        <div className="card" style={{ padding:32 }}>
+          <h2 style={{ fontWeight:700, fontSize:22, color:'#f1f5f9', marginBottom:4, letterSpacing:'-0.3px' }}>Create your account</h2>
+          <p style={{ color:'#64748b', fontSize:13, marginBottom:24 }}>Free forever. No credit card required.</p>
+
+          {error && (
+            <div style={{ background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:10, padding:'10px 14px', color:'#fca5a5', fontSize:13, marginBottom:16 }}>
+              {error}
             </div>
-            <span className="text-2xl font-bold text-gradient">DevConnect</span>
-          </div>
+          )}
 
-          <h1 className="text-2xl font-bold text-slate-100 mb-1">Create your account</h1>
-          <p className="text-slate-500 text-sm mb-8">Free forever. No credit card required.</p>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm fade-in">
-                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                {error}
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Full name</label>
-              <input
-                name="name"
-                type="text"
-                value={form.name}
-                onChange={handleChange}
-                placeholder="Jane Developer"
-                autoComplete="name"
-                className="input-field"
-                required
-              />
+          <form onSubmit={submit} style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div>
+              <label style={{ display:'block', fontSize:12, fontWeight:500, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Full name</label>
+              <input type="text" value={form.name} onChange={set('name')}
+                placeholder="Jane Developer" className="input" required />
             </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Email</label>
-              <input
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="jane@college.edu"
-                autoComplete="email"
-                className="input-field"
-                required
-              />
+            <div>
+              <label style={{ display:'block', fontSize:12, fontWeight:500, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Email</label>
+              <input type="email" value={form.email} onChange={set('email')}
+                placeholder="jane@college.edu" className="input" required />
             </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Password</label>
-              <div className="relative">
-                <input
-                  name="password"
-                  type={showPw ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={handleChange}
-                  placeholder="Create a strong password"
-                  autoComplete="new-password"
-                  className="input-field pr-10"
-                  required
-                />
+            <div>
+              <label style={{ display:'block', fontSize:12, fontWeight:500, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Password</label>
+              <div style={{ position:'relative' }}>
+                <input type={showPw ? 'text' : 'password'} value={form.password}
+                  onChange={set('password')} placeholder="Min 6 characters"
+                  className="input" style={{ paddingRight:42 }} required />
                 <button type="button" onClick={() => setShowPw(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
-                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#475569' }}>
+                  {showPw
+                    ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  }
                 </button>
               </div>
-
-              {/* Strength meter */}
               {form.password && (
-                <div className="space-y-1.5 fade-in">
-                  <div className="flex gap-1.5">
-                    {[1, 2, 3].map(i => (
-                      <div key={i}
-                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= pwStrength ? strengthColors[pwStrength] : 'bg-dark-500'}`} />
+                <div style={{ marginTop:8 }}>
+                  <div style={{ display:'flex', gap:4, marginBottom:4 }}>
+                    {[1,2,3].map(i => (
+                      <div key={i} style={{ height:3, flex:1, borderRadius:2, background: i <= strength ? ['#ef4444','#f59e0b','#10b981'][strength-1] : '#334155', transition:'background 0.2s' }} />
                     ))}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500">{strengthLabels[pwStrength]}</span>
-                    <div className="flex gap-3">
-                      {rules.map(r => (
-                        <span key={r.label}
-                          className={`text-[11px] transition-colors ${r.test(form.password) ? 'text-emerald-400' : 'text-slate-600'}`}>
-                          ✓ {r.label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                  <span style={{ fontSize:11, color:['#ef4444','#f59e0b','#10b981'][strength-1] || '#475569' }}>
+                    {['','Weak','Fair','Strong'][strength]}
+                  </span>
                 </div>
               )}
             </div>
-
-            <button type="submit" disabled={loading} className="btn-primary w-full h-11 text-base mt-2">
-              {loading
-                ? <><Loader2 className="h-4 w-4 animate-spin" /> Creating account…</>
-                : 'Create account'
-              }
+            <button type="submit" className="btn btn-primary" style={{ marginTop:4, height:44, fontSize:15 }} disabled={loading}>
+              {loading ? <Spinner size={18} color="#fff" /> : 'Create account'}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-slate-500">
+          <p style={{ textAlign:'center', color:'#64748b', fontSize:14, marginTop:20 }}>
             Already have an account?{' '}
-            <Link to="/login" className="text-brand-400 font-semibold hover:text-brand-300 transition-colors">
-              Sign in
-            </Link>
+            <Link to="/login" style={{ color:'#818cf8', fontWeight:600, textDecoration:'none' }}>Sign in</Link>
           </p>
         </div>
       </div>

@@ -1,211 +1,130 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
-import {
-  Edit2, Check, X, Calendar, FileText,
-  Loader2, Camera, Link as LinkIcon
-} from 'lucide-react'
-import { format } from 'date-fns'
 import { usersAPI } from '../api'
 import { useAuth } from '../context/AuthContext'
-import Avatar from '../components/Avatar'
 import PostCard from '../components/PostCard'
-
-function SkeletonProfile() {
-  return (
-    <div className="space-y-6">
-      <div className="card p-6">
-        <div className="flex items-start gap-5">
-          <div className="skeleton h-20 w-20 rounded-full flex-shrink-0" />
-          <div className="flex-1 space-y-3 pt-1">
-            <div className="skeleton h-5 w-48 rounded" />
-            <div className="skeleton h-4 w-32 rounded" />
-            <div className="skeleton h-3 w-64 rounded" />
-          </div>
-        </div>
-      </div>
-      <div className="space-y-4">
-        {[1,2,3].map(i => (
-          <div key={i} className="card p-5 space-y-3">
-            <div className="skeleton h-4 w-full rounded" />
-            <div className="skeleton h-4 w-4/5 rounded" />
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
+import { Avatar, Spinner, SkeletonCard, joinDate } from '../components/helpers'
 
 export default function Profile() {
-  const { userId }              = useParams()
-  const { user: me, updateUser } = useAuth()
-  const isOwn                   = String(me?.id) === String(userId)
-
-  const [profile, setProfile]   = useState(null)
-  const [posts, setPosts]       = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState('')
-  const [editing, setEditing]   = useState(false)
-  const [saving, setSaving]     = useState(false)
-  const [editForm, setEditForm] = useState({ name: '', bio: '', avatar_url: '' })
+  const { userId }                    = useParams()
+  const { user: me, patchUser }       = useAuth()
+  const isOwn                         = String(me?.id) === String(userId)
+  const [profile, setProfile]         = useState(null)
+  const [posts, setPosts]             = useState([])
+  const [loading, setLoading]         = useState(true)
+  const [error, setError]             = useState('')
+  const [editing, setEditing]         = useState(false)
+  const [saving, setSaving]           = useState(false)
+  const [form, setForm]               = useState({ name:'', bio:'', avatar_url:'' })
 
   const load = useCallback(async () => {
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     try {
-      const [profileRes, postsRes] = await Promise.all([
-        usersAPI.getProfile(userId),
-        usersAPI.getUserPosts(userId),
-      ])
-      setProfile(profileRes.data)
-      setPosts(postsRes.data)
-      setEditForm({
-        name: profileRes.data.name,
-        bio: profileRes.data.bio || '',
-        avatar_url: profileRes.data.avatar_url || '',
-      })
-    } catch (err) {
-      setError(err?.response?.data?.detail || 'Could not load profile.')
-    } finally {
-      setLoading(false)
-    }
+      const [pr, po] = await Promise.all([usersAPI.profile(userId), usersAPI.posts(userId)])
+      setProfile(pr.data); setPosts(po.data)
+      setForm({ name: pr.data.name, bio: pr.data.bio || '', avatar_url: pr.data.avatar_url || '' })
+    } catch(err) {
+      setError(err?.response?.data?.detail || 'Could not load profile')
+    } finally { setLoading(false) }
   }, [userId])
 
   useEffect(() => { load() }, [load])
 
-  const handleSave = async () => {
+  const saveProfile = async () => {
     setSaving(true)
     try {
-      const payload = {}
-      if (editForm.name.trim()) payload.name = editForm.name.trim()
-      if (editForm.bio !== undefined) payload.bio = editForm.bio
-      if (editForm.avatar_url !== undefined) payload.avatar_url = editForm.avatar_url || null
-
-      const { data } = await usersAPI.updateProfile(payload)
-      setProfile(prev => ({ ...prev, ...data }))
-      updateUser(data)
+      const { data } = await usersAPI.update({
+        name: form.name.trim() || undefined,
+        bio: form.bio,
+        avatar_url: form.avatar_url || null,
+      })
+      setProfile(p => ({ ...p, ...data }))
+      patchUser(data)
       setEditing(false)
-    } catch (err) {
-      alert(err?.response?.data?.detail || 'Failed to save.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleDeletePost = (postId) => {
-    setPosts(prev => prev.filter(p => p.id !== postId))
-    setProfile(prev => ({ ...prev, post_count: (prev?.post_count || 1) - 1 }))
+    } catch(err) {
+      alert(err?.response?.data?.detail || 'Save failed')
+    } finally { setSaving(false) }
   }
 
   if (loading) return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <SkeletonProfile />
+    <div style={{ maxWidth:640, margin:'0 auto', padding:'28px 20px' }}>
+      <div className="card" style={{ padding:24, marginBottom:20 }}>
+        <div style={{ display:'flex', gap:16 }}>
+          <div className="skeleton" style={{ width:72, height:72, borderRadius:'50%', flexShrink:0 }} />
+          <div style={{ flex:1, paddingTop:4 }}>
+            <div className="skeleton" style={{ height:16, width:'40%', marginBottom:8 }} />
+            <div className="skeleton" style={{ height:13, width:'60%' }} />
+          </div>
+        </div>
+      </div>
+      {[1,2,3].map(i => <div key={i} style={{ marginBottom:14 }}><SkeletonCard /></div>)}
     </div>
   )
 
   if (error) return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <div className="card p-8 text-center">
-        <p className="text-4xl mb-3">😕</p>
-        <p className="font-semibold text-slate-300 mb-1">{error}</p>
-        <button onClick={load} className="btn-primary mt-4">Retry</button>
-      </div>
+    <div style={{ maxWidth:640, margin:'0 auto', padding:'28px 20px', textAlign:'center' }}>
+      <p style={{ color:'#f87171', marginBottom:16 }}>{error}</p>
+      <button className="btn btn-primary" onClick={load}>Retry</button>
     </div>
   )
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
+    <div style={{ maxWidth:640, margin:'0 auto', padding:'28px 20px' }}>
       {/* Profile card */}
-      <div className="card p-6 slide-up">
-        <div className="flex items-start gap-5">
-          {/* Avatar */}
-          <div className="relative flex-shrink-0">
-            <Avatar user={profile} size="2xl" />
-            {isOwn && editing && (
-              <button
-                className="absolute bottom-0 right-0 h-7 w-7 rounded-full bg-brand-600 flex items-center justify-center border-2 border-dark-800 hover:bg-brand-500 transition-colors"
-                title="Change avatar URL">
-                <Camera className="h-3.5 w-3.5 text-white" />
-              </button>
-            )}
-          </div>
-
-          {/* Info */}
-          <div className="flex-1 min-w-0">
+      <div className="card" style={{ padding:24, marginBottom:20 }}>
+        <div style={{ display:'flex', alignItems:'flex-start', gap:18 }}>
+          <Avatar user={profile} size={72} />
+          <div style={{ flex:1, minWidth:0 }}>
             {!editing ? (
               <>
-                <div className="flex items-start justify-between gap-2">
-                  <h1 className="text-xl font-bold text-slate-100 truncate">{profile?.name}</h1>
+                <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
+                  <div>
+                    <h1 style={{ fontWeight:700, fontSize:20, color:'#f1f5f9', marginBottom:2 }}>{profile?.name}</h1>
+                    <p style={{ color:'#475569', fontSize:13 }}>{profile?.email}</p>
+                  </div>
                   {isOwn && (
-                    <button onClick={() => setEditing(true)}
-                      className="btn-ghost py-1 px-2.5 text-xs gap-1.5 flex-shrink-0">
-                      <Edit2 className="h-3.5 w-3.5" /> Edit
+                    <button className="btn btn-ghost" style={{ padding:'5px 12px', fontSize:12, flexShrink:0 }}
+                      onClick={() => setEditing(true)}>
+                      Edit
                     </button>
                   )}
                 </div>
-                <p className="text-sm text-slate-500 mt-0.5">{profile?.email}</p>
-                {profile?.bio ? (
-                  <p className="text-sm text-slate-300 mt-2 leading-relaxed">{profile.bio}</p>
-                ) : isOwn ? (
-                  <p className="text-sm text-slate-600 mt-2 italic">Add a bio to tell the community about yourself…</p>
-                ) : null}
-
-                <div className="flex flex-wrap items-center gap-4 mt-4">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                    <Calendar className="h-3.5 w-3.5" />
-                    Joined {profile?.created_at ? format(new Date(profile.created_at), 'MMMM yyyy') : '—'}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                    <FileText className="h-3.5 w-3.5" />
-                    <span className="font-semibold text-brand-400">{posts.length}</span> posts
-                  </div>
+                {profile?.bio
+                  ? <p style={{ color:'#94a3b8', fontSize:14, marginTop:10, lineHeight:1.6 }}>{profile.bio}</p>
+                  : isOwn && <p style={{ color:'#334155', fontSize:13, marginTop:10, fontStyle:'italic' }}>Add a bio…</p>
+                }
+                <div style={{ display:'flex', gap:20, marginTop:14 }}>
+                  <span style={{ fontSize:13, color:'#475569' }}>
+                    <span style={{ fontWeight:600, color:'#818cf8' }}>{posts.length}</span> posts
+                  </span>
+                  {profile?.created_at && (
+                    <span style={{ fontSize:13, color:'#475569' }}>
+                      Joined {joinDate(profile.created_at)}
+                    </span>
+                  )}
                 </div>
               </>
             ) : (
               /* Edit form */
-              <div className="space-y-3 fade-in">
+              <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
                 <div>
-                  <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Name</label>
-                  <input
-                    value={editForm.name}
-                    onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
-                    className="input-field mt-1"
-                    placeholder="Your name"
-                    maxLength={100}
-                  />
+                  <label style={{ fontSize:12, color:'#475569', display:'block', marginBottom:4 }}>Name</label>
+                  <input className="input" value={form.name} onChange={e => setForm(f => ({...f, name:e.target.value}))} maxLength={100} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Bio</label>
-                  <textarea
-                    value={editForm.bio}
-                    onChange={e => setEditForm(p => ({ ...p, bio: e.target.value }))}
-                    className="input-field mt-1 resize-none"
-                    placeholder="Tell the community about yourself…"
-                    rows={3}
-                    maxLength={300}
-                  />
-                  <p className="text-xs text-slate-600 mt-0.5 text-right">{editForm.bio.length}/300</p>
+                  <label style={{ fontSize:12, color:'#475569', display:'block', marginBottom:4 }}>Bio</label>
+                  <textarea className="input" value={form.bio} onChange={e => setForm(f => ({...f, bio:e.target.value}))} rows={3} maxLength={300} style={{ resize:'none' }} />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                    <LinkIcon className="h-3 w-3" /> Avatar URL
-                  </label>
-                  <input
-                    value={editForm.avatar_url}
-                    onChange={e => setEditForm(p => ({ ...p, avatar_url: e.target.value }))}
-                    className="input-field mt-1"
-                    placeholder="https://example.com/avatar.jpg"
-                    type="url"
-                  />
+                  <label style={{ fontSize:12, color:'#475569', display:'block', marginBottom:4 }}>Avatar URL</label>
+                  <input className="input" value={form.avatar_url} onChange={e => setForm(f => ({...f, avatar_url:e.target.value}))} placeholder="https://…" />
                 </div>
-                <div className="flex items-center gap-2 pt-1">
-                  <button onClick={handleSave} disabled={saving} className="btn-primary h-8 px-4 text-xs">
-                    {saving
-                      ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving…</>
-                      : <><Check className="h-3.5 w-3.5" /> Save</>
-                    }
+                <div style={{ display:'flex', gap:8 }}>
+                  <button className="btn btn-primary" style={{ height:34, padding:'0 16px', fontSize:13 }} onClick={saveProfile} disabled={saving}>
+                    {saving ? <Spinner size={14} color="#fff" /> : 'Save'}
                   </button>
-                  <button onClick={() => setEditing(false)} className="btn-ghost h-8 px-3 text-xs">
-                    <X className="h-3.5 w-3.5" /> Cancel
+                  <button className="btn btn-ghost" style={{ height:34, padding:'0 14px', fontSize:13 }} onClick={() => setEditing(false)}>
+                    Cancel
                   </button>
                 </div>
               </div>
@@ -215,32 +134,19 @@ export default function Profile() {
       </div>
 
       {/* Posts */}
-      <div>
-        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider px-1 mb-3 flex items-center gap-2">
-          <FileText className="h-3.5 w-3.5" />
-          {isOwn ? 'Your posts' : `Posts by ${profile?.name?.split(' ')[0]}`}
-          <span className="tag-pill">{posts.length}</span>
-        </h2>
-
-        {posts.length === 0 ? (
-          <div className="card p-10 text-center">
-            <p className="text-3xl mb-2">📝</p>
-            <p className="text-slate-400 text-sm">
-              {isOwn ? 'You haven\'t posted anything yet.' : 'No posts yet.'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {posts.map(post => (
-              <PostCard
-                key={post.id}
-                post={post}
-                onDelete={isOwn ? handleDeletePost : undefined}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      <p style={{ fontSize:12, fontWeight:600, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:14 }}>
+        {isOwn ? 'Your posts' : 'Posts'} · {posts.length}
+      </p>
+      {posts.length === 0 && (
+        <div className="card" style={{ padding:40, textAlign:'center' }}>
+          <p style={{ color:'#475569', fontSize:14 }}>No posts yet</p>
+        </div>
+      )}
+      {posts.map(post => (
+        <div key={post.id} style={{ marginBottom:14 }}>
+          <PostCard post={post} onDelete={isOwn ? id => setPosts(p => p.filter(x => x.id !== id)) : undefined} />
+        </div>
+      ))}
     </div>
   )
 }

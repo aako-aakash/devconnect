@@ -1,262 +1,250 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import {
-  Search, Bell, LogOut, User, Home, X, Menu,
-  Code2, ChevronDown
-} from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { postsAPI, usersAPI } from '../api'
-import Avatar from './Avatar'
-import { useDebounce } from '../hooks'
-import { formatDistanceToNow } from 'date-fns'
+import { Avatar } from './helpers'
 
 export default function Navbar() {
-  const { user, logout }   = useAuth()
-  const navigate            = useNavigate()
-  const location            = useLocation()
-  const [query, setQuery]   = useState('')
-  const [results, setResults] = useState({ posts: [], users: [] })
-  const [searching, setSearching] = useState(false)
-  const [showSearch, setShowSearch] = useState(false)
-  const [showNotifs, setShowNotifs] = useState(false)
-  const [showMenu, setShowMenu]   = useState(false)
+  const { user, logout }          = useAuth()
+  const nav                       = useNavigate()
+  const loc                       = useLocation()
+  const [q, setQ]                 = useState('')
+  const [results, setResults]     = useState(null)
+  const [showUser, setShowUser]   = useState(false)
   const [notifs, setNotifs]       = useState([])
+  const [showNotif, setShowNotif] = useState(false)
   const [unread, setUnread]       = useState(0)
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const searchRef  = useRef(null)
-  const notifsRef  = useRef(null)
-  const debouncedQ = useDebounce(query, 350)
+  const searchRef                 = useRef(null)
+  const userRef                   = useRef(null)
+  const notifRef                  = useRef(null)
+  const timer                     = useRef(null)
 
-  // Fetch notifications
+  /* load notifications once */
   useEffect(() => {
     if (!user) return
-    usersAPI.getNotifications()
-      .then(({ data }) => {
-        setNotifs(data)
-        setUnread(data.filter(n => !n.is_read).length)
-      })
-      .catch(() => {})
+    usersAPI.notifications().then(r => {
+      setNotifs(r.data)
+      setUnread(r.data.filter(n => !n.is_read).length)
+    }).catch(() => {})
   }, [user])
 
-  // Search when query changes
+  /* debounced search */
   useEffect(() => {
-    if (!debouncedQ.trim()) { setResults({ posts: [], users: [] }); return }
-    setSearching(true)
-    Promise.allSettled([
-      postsAPI.searchPosts(debouncedQ),
-      usersAPI.searchUsers(debouncedQ),
-    ]).then(([postRes, userRes]) => {
+    clearTimeout(timer.current)
+    if (!q.trim()) { setResults(null); return }
+    timer.current = setTimeout(async () => {
+      const [p, u] = await Promise.allSettled([
+        postsAPI.search(q), usersAPI.search(q)
+      ])
       setResults({
-        posts: postRes.status === 'fulfilled' ? postRes.value.data : [],
-        users: userRes.status === 'fulfilled' ? userRes.value.data : [],
+        posts: p.status === 'fulfilled' ? p.value.data.slice(0,4) : [],
+        users: u.status === 'fulfilled' ? u.value.data.slice(0,4) : [],
       })
-    }).finally(() => setSearching(false))
-  }, [debouncedQ])
+    }, 350)
+  }, [q])
 
-  // Close dropdowns on outside click
+  /* close dropdowns on outside click */
   useEffect(() => {
-    const handler = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSearch(false)
-      if (notifsRef.current && !notifsRef.current.contains(e.target)) setShowNotifs(false)
+    const h = e => {
+      if (!searchRef.current?.contains(e.target)) setResults(null)
+      if (!userRef.current?.contains(e.target))   setShowUser(false)
+      if (!notifRef.current?.contains(e.target))  setShowNotif(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  const handleNotifOpen = () => {
-    setShowNotifs(v => !v)
-    if (!showNotifs && unread > 0) {
-      usersAPI.markNotificationsRead().then(() => setUnread(0)).catch(() => {})
+  const openNotif = () => {
+    setShowNotif(v => !v)
+    if (!showNotif && unread) {
+      usersAPI.markRead().then(() => setUnread(0)).catch(() => {})
     }
   }
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
+  const S = {
+    logo: { display:'flex', alignItems:'center', gap:8, textDecoration:'none' },
+    logoBox: {
+      width:34, height:34, borderRadius:10, background:'#6366f1',
+      display:'flex', alignItems:'center', justifyContent:'center',
+      boxShadow:'0 0 14px rgba(99,102,241,0.4)',
+    },
+    logoText: { fontWeight:700, fontSize:18, color:'#e2e8f0', letterSpacing:'-0.3px' },
+    searchWrap: { position:'relative', flex:1, maxWidth:380 },
+    searchInput: { width:'100%', padding:'8px 14px 8px 36px',
+      background:'#1e293b', border:'1px solid #334155', borderRadius:10,
+      color:'#e2e8f0', fontFamily:'inherit', fontSize:14, outline:'none' },
+    searchIcon: { position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#475569' },
+    dropdown: {
+      position:'absolute', top:'calc(100% + 8px)', left:0, right:0,
+      background:'#1e293b', border:'1px solid #334155', borderRadius:12,
+      boxShadow:'0 20px 40px rgba(0,0,0,0.5)', zIndex:100, overflow:'hidden',
+    },
+    navLink: {
+      display:'flex', alignItems:'center', gap:6, padding:'6px 12px',
+      borderRadius:9, textDecoration:'none', fontSize:14, fontWeight:500,
+      color: '#94a3b8', transition:'all 0.15s',
+    },
+    iconBtn: {
+      background:'transparent', border:'none', cursor:'pointer',
+      padding:8, borderRadius:9, color:'#94a3b8', position:'relative',
+      display:'flex', alignItems:'center',
+    },
+    notifDropdown: {
+      position:'absolute', top:'calc(100% + 8px)', right:0, width:320,
+      background:'#1e293b', border:'1px solid #334155', borderRadius:12,
+      boxShadow:'0 20px 40px rgba(0,0,0,0.5)', zIndex:100, overflow:'hidden',
+    },
+    userDropdown: {
+      position:'absolute', top:'calc(100% + 8px)', right:0, width:180,
+      background:'#1e293b', border:'1px solid #334155', borderRadius:12,
+      boxShadow:'0 20px 40px rgba(0,0,0,0.5)', zIndex:100, overflow:'hidden',
+    },
   }
 
-  const isActive = (path) => location.pathname === path
+  const isActive = path => loc.pathname === path
 
   return (
-    <nav className="sticky top-0 z-50 glass border-b border-white/5">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-4">
+    <nav className="navbar">
+      {/* Logo */}
+      <Link to="/feed" style={S.logo}>
+        <div style={S.logoBox}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
+            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+          </svg>
+        </div>
+        <span style={S.logoText}>DevConnect</span>
+      </Link>
 
-        {/* Logo */}
-        <Link to="/feed" className="flex items-center gap-2 flex-shrink-0 mr-2">
-          <div className="h-8 w-8 rounded-lg bg-brand-600 flex items-center justify-center glow">
-            <Code2 className="h-4 w-4 text-white" />
+      {/* Search */}
+      <div ref={searchRef} style={S.searchWrap}>
+        <svg style={S.searchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input
+          style={S.searchInput}
+          placeholder="Search people & posts…"
+          value={q}
+          onChange={e => setQ(e.target.value)}
+        />
+        {results && (
+          <div style={S.dropdown}>
+            {results.users.length === 0 && results.posts.length === 0
+              ? <div style={{ padding:'12px 16px', color:'#475569', fontSize:14 }}>No results</div>
+              : <>
+                {results.users.map(u => (
+                  <button key={u.id}
+                    onClick={() => { nav(`/profile/${u.id}`); setQ(''); setResults(null) }}
+                    style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'10px 14px',
+                      background:'none', border:'none', cursor:'pointer', textAlign:'left' }}
+                    onMouseOver={e=>e.currentTarget.style.background='#334155'}
+                    onMouseOut={e=>e.currentTarget.style.background='none'}>
+                    <Avatar user={u} size={32} />
+                    <div>
+                      <div style={{ fontSize:14, fontWeight:500, color:'#e2e8f0' }}>{u.name}</div>
+                      <div style={{ fontSize:12, color:'#475569' }}>{u.post_count} posts</div>
+                    </div>
+                  </button>
+                ))}
+                {results.posts.map(p => (
+                  <button key={p.id}
+                    onClick={() => { nav('/feed'); setQ(''); setResults(null) }}
+                    style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding:'10px 14px',
+                      background:'none', border:'none', cursor:'pointer', textAlign:'left' }}
+                    onMouseOver={e=>e.currentTarget.style.background='#334155'}
+                    onMouseOut={e=>e.currentTarget.style.background='none'}>
+                    <Avatar user={p.author} size={28} />
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ fontSize:12, color:'#475569' }}>{p.author.name}</div>
+                      <div style={{ fontSize:13, color:'#cbd5e1', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:220 }}>{p.content}</div>
+                    </div>
+                  </button>
+                ))}
+              </>
+            }
           </div>
-          <span className="font-bold text-lg hidden sm:block text-gradient">DevConnect</span>
+        )}
+      </div>
+
+      {/* Right side */}
+      <div style={{ display:'flex', alignItems:'center', gap:4, marginLeft:'auto' }}>
+        <Link to="/feed"
+          style={{ ...S.navLink, ...(isActive('/feed') ? { color:'#818cf8', background:'rgba(99,102,241,0.1)' } : {}) }}
+          onMouseOver={e=>{ if(!isActive('/feed')) e.currentTarget.style.background='#1e293b' }}
+          onMouseOut={e=>{ if(!isActive('/feed')) e.currentTarget.style.background='transparent' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          Feed
         </Link>
 
-        {/* Search bar */}
-        <div ref={searchRef} className="relative flex-1 max-w-md">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-            <input
-              value={query}
-              onChange={e => { setQuery(e.target.value); setShowSearch(true) }}
-              onFocus={() => setShowSearch(true)}
-              placeholder="Search posts & people…"
-              className="input-field pl-9 pr-4 py-2 text-sm h-9"
-            />
-            {query && (
-              <button onClick={() => { setQuery(''); setShowSearch(false) }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Search dropdown */}
-          {showSearch && query.trim() && (
-            <div className="absolute top-full mt-2 w-full card shadow-2xl overflow-hidden fade-in">
-              {searching && (
-                <div className="px-4 py-3 text-sm text-slate-500 animate-pulse">Searching…</div>
-              )}
-              {!searching && results.users.length === 0 && results.posts.length === 0 && (
-                <div className="px-4 py-3 text-sm text-slate-500">No results for "{query}"</div>
-              )}
-              {results.users.length > 0 && (
-                <div>
-                  <div className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-dark-500/50">
-                    People
-                  </div>
-                  {results.users.slice(0, 4).map(u => (
-                    <button key={u.id} onClick={() => { navigate(`/profile/${u.id}`); setShowSearch(false); setQuery('') }}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-dark-600/60 transition-colors text-left">
-                      <Avatar user={u} size="sm" />
-                      <div>
-                        <p className="text-sm font-medium text-slate-200">{u.name}</p>
-                        <p className="text-xs text-slate-500">{u.post_count} posts</p>
+        {/* Notifications */}
+        <div ref={notifRef} style={{ position:'relative' }}>
+          <button style={S.iconBtn} onClick={openNotif}
+            onMouseOver={e=>e.currentTarget.style.background='#1e293b'}
+            onMouseOut={e=>e.currentTarget.style.background='transparent'}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            {unread > 0 && <span className="dot-unread" />}
+          </button>
+          {showNotif && (
+            <div style={S.notifDropdown}>
+              <div style={{ padding:'12px 16px', borderBottom:'1px solid #334155', fontWeight:600, fontSize:14, display:'flex', justifyContent:'space-between' }}>
+                Notifications {unread > 0 && <span className="badge">{unread} new</span>}
+              </div>
+              <div style={{ maxHeight:300, overflowY:'auto' }}>
+                {notifs.length === 0
+                  ? <div style={{ padding:'20px 16px', color:'#475569', fontSize:14, textAlign:'center' }}>No notifications yet</div>
+                  : notifs.map(n => (
+                    <div key={n.id} style={{ padding:'10px 16px', borderBottom:'1px solid #0f172a', background: n.is_read ? 'transparent' : 'rgba(99,102,241,0.07)' }}>
+                      <div style={{ fontSize:13, color:'#cbd5e1' }}>
+                        <span style={{ fontWeight:600, color:'#e2e8f0' }}>{n.actor_name}</span> {n.action}
                       </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {results.posts.length > 0 && (
-                <div>
-                  <div className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-dark-500/50">
-                    Posts
-                  </div>
-                  {results.posts.slice(0, 3).map(p => (
-                    <button key={p.id} onClick={() => { navigate('/feed'); setShowSearch(false); setQuery('') }}
-                      className="w-full flex items-start gap-3 px-4 py-2.5 hover:bg-dark-600/60 transition-colors text-left">
-                      <Avatar user={p.author} size="xs" className="mt-0.5" />
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-slate-400">{p.author.name}</p>
-                        <p className="text-sm text-slate-300 truncate">{p.content}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+                    </div>
+                  ))
+                }
+              </div>
             </div>
           )}
         </div>
 
-        {/* Nav items (desktop) */}
-        <div className="hidden md:flex items-center gap-1 ml-auto">
-          <Link to="/feed"
-            className={`btn-ghost px-3 py-2 ${isActive('/feed') ? 'text-brand-400 bg-brand-950/50' : ''}`}>
-            <Home className="h-4 w-4" />
-            <span className="text-sm">Feed</span>
-          </Link>
-
-          {/* Notifications */}
-          <div ref={notifsRef} className="relative">
-            <button onClick={handleNotifOpen}
-              className={`btn-ghost relative p-2 ${showNotifs ? 'text-brand-400' : ''}`}>
-              <Bell className="h-5 w-5" />
-              {unread > 0 && (
-                <span className="notification-dot flex items-center justify-center text-[9px] font-bold">
-                  {unread > 9 ? '9+' : unread}
-                </span>
-              )}
-            </button>
-
-            {showNotifs && (
-              <div className="absolute right-0 top-full mt-2 w-80 card shadow-2xl overflow-hidden fade-in">
-                <div className="px-4 py-3 border-b border-dark-500/50 flex items-center justify-between">
-                  <span className="font-semibold text-sm">Notifications</span>
-                  {unread > 0 && <span className="tag-pill">{unread} new</span>}
-                </div>
-                <div className="max-h-80 overflow-y-auto">
-                  {notifs.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-sm text-slate-500">
-                      No notifications yet
-                    </div>
-                  ) : (
-                    notifs.map(n => (
-                      <div key={n.id}
-                        className={`px-4 py-3 flex items-start gap-3 border-b border-dark-500/30 transition-colors
-                          ${!n.is_read ? 'bg-brand-950/20' : 'hover:bg-dark-700/50'}`}>
-                        <div className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${!n.is_read ? 'bg-brand-400' : 'bg-transparent'}`} />
-                        <div className="min-w-0">
-                          <p className="text-sm text-slate-300">
-                            <span className="font-semibold text-slate-100">{n.actor_name}</span>
-                            {' '}{n.action}
-                          </p>
-                          <p className="text-xs text-slate-600 mt-0.5">
-                            {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* User menu */}
-          <div className="relative" ref={null}>
-            <button onClick={() => setShowMenu(v => !v)}
-              className="btn-ghost flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl">
-              <Avatar user={user} size="sm" />
-              <span className="text-sm font-medium max-w-[100px] truncate">{user?.name}</span>
-              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showMenu ? 'rotate-180' : ''}`} />
-            </button>
-            {showMenu && (
-              <div className="absolute right-0 top-full mt-2 w-48 card shadow-2xl overflow-hidden fade-in">
-                <Link to={`/profile/${user?.id}`}
-                  onClick={() => setShowMenu(false)}
-                  className="flex items-center gap-2.5 px-4 py-3 text-sm text-slate-300 hover:bg-dark-600/60 transition-colors">
-                  <User className="h-4 w-4" /> My Profile
-                </Link>
-                <div className="divider" />
-                <button onClick={handleLogout}
-                  className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-colors">
-                  <LogOut className="h-4 w-4" /> Sign out
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Mobile burger */}
-        <button className="md:hidden btn-ghost p-2 ml-auto" onClick={() => setMobileOpen(v => !v)}>
-          <Menu className="h-5 w-5" />
-        </button>
-      </div>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden border-t border-dark-500/50 bg-dark-800/95 backdrop-blur-xl px-4 py-3 space-y-1">
-          <Link to="/feed" onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm ${isActive('/feed') ? 'bg-brand-950 text-brand-300' : 'text-slate-300'}`}>
-            <Home className="h-4 w-4" /> Feed
-          </Link>
-          <Link to={`/profile/${user?.id}`} onClick={() => setMobileOpen(false)}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-300">
-            <User className="h-4 w-4" /> Profile
-          </Link>
-          <button onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-red-400">
-            <LogOut className="h-4 w-4" /> Sign out
+        {/* User menu */}
+        <div ref={userRef} style={{ position:'relative' }}>
+          <button style={{ ...S.iconBtn, gap:8, padding:'5px 10px 5px 5px' }}
+            onClick={() => setShowUser(v => !v)}
+            onMouseOver={e=>e.currentTarget.style.background='#1e293b'}
+            onMouseOut={e=>e.currentTarget.style.background='transparent'}>
+            <Avatar user={user} size={30} />
+            <span style={{ fontSize:14, fontWeight:500, color:'#e2e8f0', maxWidth:100, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+              {user?.name}
+            </span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
           </button>
+          {showUser && (
+            <div style={S.userDropdown}>
+              <Link to={`/profile/${user?.id}`}
+                onClick={() => setShowUser(false)}
+                style={{ display:'flex', alignItems:'center', gap:8, padding:'11px 16px', color:'#cbd5e1', textDecoration:'none', fontSize:14 }}
+                onMouseOver={e=>e.currentTarget.style.background='#334155'}
+                onMouseOut={e=>e.currentTarget.style.background='transparent'}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+                My Profile
+              </Link>
+              <div style={{ borderTop:'1px solid #334155' }} />
+              <button
+                onClick={() => { logout(); nav('/login') }}
+                style={{ display:'flex', alignItems:'center', gap:8, padding:'11px 16px', color:'#f87171', background:'none', border:'none', width:'100%', cursor:'pointer', fontSize:14, fontFamily:'inherit' }}
+                onMouseOver={e=>e.currentTarget.style.background='rgba(239,68,68,0.08)'}
+                onMouseOut={e=>e.currentTarget.style.background='none'}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </nav>
   )
 }

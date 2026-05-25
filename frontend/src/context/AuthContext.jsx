@@ -1,62 +1,50 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { authAPI } from '../api'
+import { createContext, useContext, useState, useEffect } from 'react'
 
-const AuthContext = createContext(null)
+const Ctx = createContext(null)
 
 export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [ready, setReady]     = useState(false)   // replaces "loading"
 
-  // Rehydrate from localStorage on mount
   useEffect(() => {
-    const token = localStorage.getItem('dc_token')
-    const stored = localStorage.getItem('dc_user')
-    if (token && stored) {
-      try {
-        setUser(JSON.parse(stored))
-      } catch {
-        localStorage.removeItem('dc_user')
-      }
+    try {
+      const t = localStorage.getItem('dc_token')
+      const u = localStorage.getItem('dc_user')
+      if (t && u) setUser(JSON.parse(u))
+    } catch {
+      localStorage.clear()
+    } finally {
+      setReady(true)
     }
-    setLoading(false)
   }, [])
 
-  const login = useCallback((token, userData) => {
+  const login = (token, userData) => {
     localStorage.setItem('dc_token', token)
     localStorage.setItem('dc_user', JSON.stringify(userData))
     setUser(userData)
-  }, [])
+  }
 
-  const logout = useCallback(() => {
+  const logout = () => {
     localStorage.removeItem('dc_token')
     localStorage.removeItem('dc_user')
     setUser(null)
-  }, [])
+  }
 
-  const updateUser = useCallback((updatedData) => {
-    const merged = { ...user, ...updatedData }
-    localStorage.setItem('dc_user', JSON.stringify(merged))
-    setUser(merged)
-  }, [user])
-
-  const refreshUser = useCallback(async () => {
-    try {
-      const { data } = await authAPI.me()
-      updateUser(data)
-    } catch {
-      logout()
-    }
-  }, [updateUser, logout])
+  const patchUser = (data) => {
+    const next = { ...user, ...data }
+    localStorage.setItem('dc_user', JSON.stringify(next))
+    setUser(next)
+  }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, updateUser, refreshUser }}>
+    <Ctx.Provider value={{ user, ready, login, logout, patchUser }}>
       {children}
-    </AuthContext.Provider>
+    </Ctx.Provider>
   )
 }
 
-export const useAuth = () => {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used inside AuthProvider')
+export function useAuth() {
+  const ctx = useContext(Ctx)
+  if (!ctx) throw new Error('useAuth must be inside AuthProvider')
   return ctx
 }

@@ -1,195 +1,154 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Heart, MessageCircle, Trash2, ChevronDown, ChevronUp, Send } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
 import { postsAPI } from '../api'
 import { useAuth } from '../context/AuthContext'
-import Avatar from './Avatar'
+import { Avatar, timeAgo, Spinner } from './helpers'
 
-export default function PostCard({ post, onDelete, onUpdate }) {
-  const { user }                   = useAuth()
-  const [liked, setLiked]          = useState(post.liked_by_me)
-  const [likeCount, setLikeCount]  = useState(post.like_count)
-  const [liking, setLiking]        = useState(false)
+export default function PostCard({ post, onDelete }) {
+  const { user }                        = useAuth()
+  const [liked, setLiked]               = useState(post.liked_by_me)
+  const [likeCount, setLikeCount]       = useState(post.like_count)
+  const [liking, setLiking]             = useState(false)
   const [showComments, setShowComments] = useState(false)
-  const [comments, setComments]    = useState([])
-  const [loadingComments, setLoadingComments] = useState(false)
-  const [commentText, setCommentText] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [deleting, setDeleting]    = useState(false)
-  const isOwner = user?.id === post.author.id
+  const [comments, setComments]         = useState([])
+  const [loadingCmt, setLoadingCmt]     = useState(false)
+  const [newCmt, setNewCmt]             = useState('')
+  const [postingCmt, setPostingCmt]     = useState(false)
+  const [deleting, setDeleting]         = useState(false)
 
   const handleLike = async () => {
     if (liking) return
     setLiking(true)
-    // Optimistic update
-    setLiked(prev => !prev)
-    setLikeCount(prev => liked ? prev - 1 : prev + 1)
+    const wasLiked = liked
+    setLiked(!wasLiked); setLikeCount(c => wasLiked ? c - 1 : c + 1)
     try {
-      const { data } = await postsAPI.toggleLike(post.id)
-      setLiked(data.liked)
-      setLikeCount(data.like_count)
+      const { data } = await postsAPI.like(post.id)
+      setLiked(data.liked); setLikeCount(data.like_count)
     } catch {
-      setLiked(prev => !prev)
-      setLikeCount(prev => liked ? prev + 1 : prev - 1)
-    } finally {
-      setLiking(false)
-    }
+      setLiked(wasLiked); setLikeCount(c => wasLiked ? c + 1 : c - 1)
+    } finally { setLiking(false) }
   }
 
-  const handleToggleComments = async () => {
+  const toggleComments = async () => {
     if (!showComments && comments.length === 0) {
-      setLoadingComments(true)
-      try {
-        const { data } = await postsAPI.getComments(post.id)
-        setComments(data)
-      } catch {}
-      finally { setLoadingComments(false) }
+      setLoadingCmt(true)
+      try { const { data } = await postsAPI.comments(post.id); setComments(data) }
+      catch {}
+      finally { setLoadingCmt(false) }
     }
     setShowComments(v => !v)
   }
 
-  const handleAddComment = async (e) => {
+  const submitComment = async e => {
     e.preventDefault()
-    if (!commentText.trim() || submitting) return
-    setSubmitting(true)
+    if (!newCmt.trim() || postingCmt) return
+    setPostingCmt(true)
     try {
-      const { data } = await postsAPI.addComment(post.id, { content: commentText.trim() })
-      setComments(prev => [...prev, data])
-      setCommentText('')
-      if (onUpdate) onUpdate(post.id, { comment_count: post.comment_count + 1 })
+      const { data } = await postsAPI.addComment(post.id, { content: newCmt.trim() })
+      setComments(c => [...c, data]); setNewCmt('')
     } catch {}
-    finally { setSubmitting(false) }
+    finally { setPostingCmt(false) }
   }
 
   const handleDelete = async () => {
-    if (!window.confirm('Delete this post?')) return
+    if (!confirm('Delete this post?')) return
     setDeleting(true)
-    try {
-      await postsAPI.delete(post.id)
-      if (onDelete) onDelete(post.id)
-    } catch {}
-    finally { setDeleting(false) }
+    try { await postsAPI.remove(post.id); onDelete?.(post.id) }
+    catch { setDeleting(false) }
   }
 
   return (
-    <article className="card p-5 hover:border-dark-400/60 transition-all duration-200 fade-in group">
+    <div className="card fade-up" style={{ padding: 20 }}>
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <Link to={`/profile/${post.author.id}`} className="flex items-center gap-3 min-w-0 group/author">
-          <Avatar user={post.author} size="md" />
-          <div className="min-w-0">
-            <p className="font-semibold text-slate-100 text-sm group-hover/author:text-brand-300 transition-colors truncate">
-              {post.author.name}
-            </p>
-            <p className="text-xs text-slate-500 font-mono">
-              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-            </p>
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:12 }}>
+        <Link to={`/profile/${post.author.id}`} style={{ display:'flex', alignItems:'center', gap:10, textDecoration:'none' }}>
+          <Avatar user={post.author} size={38} />
+          <div>
+            <div style={{ fontWeight:600, fontSize:14, color:'#e2e8f0' }}>{post.author.name}</div>
+            <div style={{ fontSize:12, color:'#475569', marginTop:1 }}>{timeAgo(post.created_at)}</div>
           </div>
         </Link>
-        {isOwner && (
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="btn-danger opacity-0 group-hover:opacity-100 p-1.5 transition-all"
-            title="Delete post">
-            <Trash2 className="h-4 w-4" />
+        {user?.id === post.author.id && (
+          <button className="btn btn-danger" style={{ padding:'4px 8px', fontSize:12 }}
+            onClick={handleDelete} disabled={deleting}>
+            {deleting ? <Spinner size={14}/> : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            )}
           </button>
         )}
       </div>
 
       {/* Content */}
-      <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap break-words mb-4">
+      <p style={{ fontSize:14, color:'#cbd5e1', lineHeight:1.6, whiteSpace:'pre-wrap', wordBreak:'break-word', marginBottom:14 }}>
         {post.content}
       </p>
 
-      {/* Action bar */}
-      <div className="flex items-center gap-1 pt-3 border-t border-dark-500/40">
-        {/* Like */}
+      {/* Actions */}
+      <div style={{ display:'flex', gap:4, paddingTop:12, borderTop:'1px solid #334155' }}>
         <button
           onClick={handleLike}
-          disabled={liking}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all
-            ${liked
-              ? 'text-red-400 bg-red-500/10 hover:bg-red-500/20'
-              : 'text-slate-500 hover:text-red-400 hover:bg-red-500/10'
-            }`}>
-          <Heart className={`h-4 w-4 transition-transform ${liked ? 'fill-current scale-110' : ''}`} />
-          <span>{likeCount}</span>
+          style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:8,
+            background: liked ? 'rgba(239,68,68,0.1)' : 'transparent',
+            border:'none', cursor:'pointer', color: liked ? '#f87171' : '#64748b',
+            fontSize:13, fontWeight:500, fontFamily:'inherit', transition:'all 0.15s' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24"
+            fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          {likeCount}
         </button>
-
-        {/* Comments */}
         <button
-          onClick={handleToggleComments}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 hover:text-brand-400 hover:bg-brand-950/30 transition-all">
-          <MessageCircle className="h-4 w-4" />
-          <span>{post.comment_count + (comments.length > post.comment_count ? comments.length - post.comment_count : 0)}</span>
-          {showComments
-            ? <ChevronUp className="h-3.5 w-3.5 ml-0.5" />
-            : <ChevronDown className="h-3.5 w-3.5 ml-0.5" />
-          }
+          onClick={toggleComments}
+          style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px', borderRadius:8,
+            background: showComments ? 'rgba(99,102,241,0.1)' : 'transparent',
+            border:'none', cursor:'pointer', color: showComments ? '#818cf8' : '#64748b',
+            fontSize:13, fontWeight:500, fontFamily:'inherit', transition:'all 0.15s' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          {post.comment_count + (comments.length > post.comment_count ? comments.length - post.comment_count : 0)}
         </button>
       </div>
 
-      {/* Comments panel */}
+      {/* Comments */}
       {showComments && (
-        <div className="mt-4 pt-4 border-t border-dark-500/40 space-y-3 fade-in">
-          {loadingComments && (
-            <div className="space-y-2">
-              {[1,2].map(i => (
-                <div key={i} className="flex gap-2 items-start">
-                  <div className="skeleton h-7 w-7 rounded-full flex-shrink-0" />
-                  <div className="skeleton h-10 flex-1 rounded-lg" />
+        <div style={{ marginTop:14, paddingTop:14, borderTop:'1px solid #0f172a' }}>
+          {loadingCmt && <div style={{ display:'flex', justifyContent:'center', padding:12 }}><Spinner /></div>}
+          {comments.map(c => (
+            <div key={c.id} style={{ display:'flex', gap:8, marginBottom:10 }}>
+              <Link to={`/profile/${c.author.id}`}><Avatar user={c.author} size={28} /></Link>
+              <div style={{ background:'#0f172a', borderRadius:10, padding:'8px 12px', flex:1 }}>
+                <div style={{ display:'flex', gap:8, alignItems:'baseline', marginBottom:2 }}>
+                  <Link to={`/profile/${c.author.id}`} style={{ fontWeight:600, fontSize:13, color:'#e2e8f0', textDecoration:'none' }}>{c.author.name}</Link>
+                  <span style={{ fontSize:11, color:'#475569' }}>{timeAgo(c.created_at)}</span>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {!loadingComments && comments.map(c => (
-            <div key={c.id} className="flex items-start gap-2.5 group/comment">
-              <Link to={`/profile/${c.author.id}`}>
-                <Avatar user={c.author} size="xs" />
-              </Link>
-              <div className="flex-1 min-w-0 bg-dark-700/60 rounded-xl px-3 py-2">
-                <div className="flex items-baseline gap-2">
-                  <Link to={`/profile/${c.author.id}`}
-                    className="text-xs font-semibold text-slate-300 hover:text-brand-300 transition-colors">
-                    {c.author.name}
-                  </Link>
-                  <span className="text-[11px] text-slate-600 font-mono">
-                    {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                  </span>
-                </div>
-                <p className="text-sm text-slate-400 mt-0.5 break-words">{c.content}</p>
+                <p style={{ fontSize:13, color:'#94a3b8', margin:0 }}>{c.content}</p>
               </div>
             </div>
           ))}
-
-          {!loadingComments && comments.length === 0 && (
-            <p className="text-sm text-slate-600 text-center py-2">No comments yet. Be the first!</p>
+          {!loadingCmt && comments.length === 0 && (
+            <p style={{ fontSize:13, color:'#475569', textAlign:'center', padding:'8px 0' }}>No comments yet</p>
           )}
-
-          {/* Add comment */}
-          <form onSubmit={handleAddComment} className="flex items-center gap-2 mt-2">
-            <Avatar user={user} size="xs" />
-            <div className="flex-1 relative">
+          <form onSubmit={submitComment} style={{ display:'flex', gap:8, marginTop:8 }}>
+            <Avatar user={user} size={28} />
+            <div style={{ flex:1, position:'relative' }}>
               <input
-                value={commentText}
-                onChange={e => setCommentText(e.target.value)}
-                placeholder="Write a comment…"
-                maxLength={500}
-                className="input-field pr-10 py-2 text-sm"
+                value={newCmt} onChange={e => setNewCmt(e.target.value)}
+                placeholder="Write a comment…" maxLength={500}
+                className="input" style={{ paddingRight:42, fontSize:13 }}
               />
-              <button
-                type="submit"
-                disabled={!commentText.trim() || submitting}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-brand-400 hover:text-brand-300 disabled:text-slate-600 transition-colors">
-                <Send className="h-4 w-4" />
+              <button type="submit" disabled={!newCmt.trim() || postingCmt}
+                style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)',
+                  background:'none', border:'none', cursor:'pointer', color: newCmt.trim() ? '#6366f1' : '#334155',
+                  display:'flex', alignItems:'center' }}>
+                {postingCmt ? <Spinner size={14}/> : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                )}
               </button>
             </div>
           </form>
         </div>
       )}
-    </article>
+    </div>
   )
 }

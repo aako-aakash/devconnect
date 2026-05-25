@@ -1,213 +1,149 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Loader2, RefreshCw, TrendingUp, Users } from 'lucide-react'
 import { postsAPI } from '../api'
 import { useAuth } from '../context/AuthContext'
-import CreatePost from '../components/CreatePost'
 import PostCard from '../components/PostCard'
+import { Spinner, SkeletonCard } from '../components/helpers'
 
-function SkeletonPost() {
+function CreatePost({ onCreated }) {
+  const { user }              = useAuth()
+  const [text, setText]       = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState('')
+  const [focused, setFocused] = useState(false)
+
+  const submit = async e => {
+    e.preventDefault()
+    if (!text.trim() || loading) return
+    setLoading(true); setError('')
+    try {
+      const { data } = await postsAPI.create({ content: text.trim() })
+      setText(''); setFocused(false); onCreated(data)
+    } catch(err) {
+      setError(err?.response?.data?.detail || 'Failed to post')
+    } finally { setLoading(false) }
+  }
+
   return (
-    <div className="card p-5 space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="skeleton h-10 w-10 rounded-full" />
-        <div className="space-y-2 flex-1">
-          <div className="skeleton h-3.5 w-32 rounded" />
-          <div className="skeleton h-3 w-20 rounded" />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <div className="skeleton h-3.5 w-full rounded" />
-        <div className="skeleton h-3.5 w-4/5 rounded" />
-        <div className="skeleton h-3.5 w-2/3 rounded" />
-      </div>
-      <div className="flex gap-3 pt-2 border-t border-dark-500/30">
-        <div className="skeleton h-7 w-16 rounded-lg" />
-        <div className="skeleton h-7 w-20 rounded-lg" />
-      </div>
+    <div className="card" style={{ padding:18, marginBottom:18 }}>
+      <form onSubmit={submit}>
+        <textarea
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onFocus={() => setFocused(true)}
+          placeholder="Share something with the community…"
+          maxLength={2000}
+          rows={focused || text ? 4 : 2}
+          style={{ width:'100%', background:'transparent', border:'none', outline:'none', resize:'none',
+            color:'#e2e8f0', fontSize:14, lineHeight:1.6, fontFamily:'inherit' }}
+        />
+        {(focused || text) && (
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:12, paddingTop:12, borderTop:'1px solid #334155' }}>
+            <span style={{ fontSize:12, color: text.length > 1900 ? '#f59e0b' : '#475569' }}>
+              {2000 - text.length} chars left
+            </span>
+            <button type="submit" className="btn btn-primary" style={{ height:34, padding:'0 16px', fontSize:13 }} disabled={!text.trim() || loading}>
+              {loading ? <Spinner size={14} color="#fff" /> : 'Post'}
+            </button>
+          </div>
+        )}
+        {error && <p style={{ color:'#f87171', fontSize:13, marginTop:8 }}>{error}</p>}
+      </form>
     </div>
   )
 }
 
 export default function Feed() {
-  const { user }                    = useAuth()
-  const [posts, setPosts]           = useState([])
-  const [page, setPage]             = useState(1)
-  const [hasMore, setHasMore]       = useState(true)
-  const [loading, setLoading]       = useState(true)
+  const [posts, setPosts]         = useState([])
+  const [page, setPage]           = useState(1)
+  const [hasMore, setHasMore]     = useState(true)
+  const [loading, setLoading]     = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [error, setError]           = useState('')
-  const [total, setTotal]           = useState(0)
-  const loaderRef                   = useRef(null)
+  const [error, setError]         = useState('')
+  const [total, setTotal]         = useState(0)
+  const loaderRef                 = useRef(null)
 
-  const loadPosts = useCallback(async (pageNum = 1, append = false) => {
-    if (pageNum === 1) setLoading(true)
-    else setLoadingMore(true)
+  const loadPosts = useCallback(async (pg = 1, append = false) => {
+    if (pg === 1) setLoading(true); else setLoadingMore(true)
     setError('')
     try {
-      const { data } = await postsAPI.getFeed(pageNum, 15)
+      const { data } = await postsAPI.feed(pg, 15)
       setPosts(prev => append ? [...prev, ...data.posts] : data.posts)
       setHasMore(data.has_more)
       setTotal(data.total)
-      setPage(pageNum)
+      setPage(pg)
     } catch {
-      setError('Failed to load posts. Please refresh.')
+      setError('Could not load posts. Check your connection.')
     } finally {
-      setLoading(false)
-      setLoadingMore(false)
+      setLoading(false); setLoadingMore(false)
     }
   }, [])
 
-  useEffect(() => {
-    loadPosts(1)
-  }, [loadPosts])
+  useEffect(() => { loadPosts(1) }, [loadPosts])
 
-  // Infinite scroll via IntersectionObserver
+  /* Infinite scroll */
   useEffect(() => {
     if (!loaderRef.current || !hasMore || loadingMore) return
-    const obs = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadPosts(page + 1, true)
-      },
-      { threshold: 0.1 }
-    )
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) loadPosts(page + 1, true)
+    }, { threshold: 0.1 })
     obs.observe(loaderRef.current)
     return () => obs.disconnect()
   }, [hasMore, loadingMore, page, loadPosts])
 
-  const handleCreated = (newPost) => {
-    setPosts(prev => [newPost, ...prev])
-    setTotal(prev => prev + 1)
-  }
-
-  const handleDelete = (postId) => {
-    setPosts(prev => prev.filter(p => p.id !== postId))
-    setTotal(prev => prev - 1)
-  }
-
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div style={{ maxWidth:780, margin:'0 auto', padding:'28px 20px' }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 260px', gap:24 }}>
+        {/* Main column */}
+        <div>
+          <CreatePost onCreated={p => { setPosts(prev => [p, ...prev]); setTotal(t => t+1) }} />
 
-        {/* Main feed column */}
-        <div className="lg:col-span-2 space-y-4">
-          <CreatePost onCreated={handleCreated} />
-
-          {/* Feed header */}
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-brand-400" />
-              Global Feed
-              {total > 0 && <span className="tag-pill ml-1">{total}</span>}
-            </h2>
-            <button
-              onClick={() => loadPosts(1)}
-              disabled={loading}
-              className="btn-ghost py-1 px-2 text-xs gap-1.5">
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
-          </div>
+          {loading && [1,2,3,4].map(i => <div key={i} style={{ marginBottom:14 }}><SkeletonCard /></div>)}
 
           {error && (
-            <div className="card p-4 text-center text-red-400 text-sm">
-              {error}
-              <button onClick={() => loadPosts(1)} className="ml-2 underline">Retry</button>
+            <div style={{ background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', borderRadius:12, padding:16, color:'#fca5a5', fontSize:14, textAlign:'center' }}>
+              {error} <button onClick={() => loadPosts(1)} style={{ background:'none', border:'none', color:'#818cf8', cursor:'pointer', fontSize:14 }}>Retry</button>
             </div>
           )}
 
-          {/* Skeleton loading */}
-          {loading && (
-            <div className="space-y-4">
-              {[1,2,3,4].map(i => <SkeletonPost key={i} />)}
+          {!loading && posts.length === 0 && !error && (
+            <div className="card" style={{ padding:48, textAlign:'center' }}>
+              <div style={{ fontSize:36, marginBottom:10 }}>👋</div>
+              <p style={{ color:'#94a3b8', fontSize:15 }}>No posts yet — be the first!</p>
             </div>
           )}
 
-          {/* Posts */}
-          {!loading && (
-            <>
-              {posts.length === 0 ? (
-                <div className="card p-12 text-center">
-                  <p className="text-4xl mb-3">👋</p>
-                  <p className="font-semibold text-slate-300 mb-1">Nothing here yet</p>
-                  <p className="text-sm text-slate-500">Be the first to post something!</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {posts.map((post, i) => (
-                    <div key={post.id} style={{ animationDelay: `${Math.min(i, 5) * 60}ms` }}>
-                      <PostCard
-                        post={post}
-                        onDelete={handleDelete}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
+          {!loading && posts.map(post => (
+            <div key={post.id} style={{ marginBottom:14 }}>
+              <PostCard post={post} onDelete={id => { setPosts(p => p.filter(x => x.id !== id)); setTotal(t => t-1) }} />
+            </div>
+          ))}
 
-              {/* Infinite scroll trigger */}
-              {hasMore && (
-                <div ref={loaderRef} className="py-4 flex justify-center">
-                  {loadingMore && (
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading more…
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {!hasMore && posts.length > 0 && (
-                <p className="text-center text-xs text-slate-600 py-4 font-mono">— You've seen everything —</p>
-              )}
-            </>
+          {hasMore && (
+            <div ref={loaderRef} style={{ display:'flex', justifyContent:'center', padding:20 }}>
+              {loadingMore && <Spinner />}
+            </div>
+          )}
+          {!hasMore && posts.length > 0 && (
+            <p style={{ textAlign:'center', color:'#334155', fontSize:13, padding:'16px 0', fontFamily:'monospace' }}>
+              — end of feed —
+            </p>
           )}
         </div>
 
         {/* Sidebar */}
-        <div className="hidden lg:block space-y-4">
-          {/* User card */}
-          <div className="card p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-brand-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg glow">
-                {user?.name?.[0]?.toUpperCase()}
-              </div>
-              <div>
-                <p className="font-semibold text-slate-100">{user?.name}</p>
-                <p className="text-xs text-slate-500 truncate max-w-[140px]">{user?.email}</p>
-              </div>
-            </div>
-            <div className="text-center py-3 bg-dark-700/50 rounded-xl">
-              <p className="text-2xl font-bold text-brand-400">{total}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Posts in community</p>
+        <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+          <div className="card" style={{ padding:18 }}>
+            <p style={{ fontSize:12, fontWeight:600, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:12 }}>Community</p>
+            <div style={{ textAlign:'center', padding:'12px 0', background:'#0f172a', borderRadius:10 }}>
+              <p style={{ fontSize:28, fontWeight:700, color:'#818cf8' }}>{total}</p>
+              <p style={{ fontSize:12, color:'#475569', marginTop:2 }}>posts shared</p>
             </div>
           </div>
-
-          {/* Tips */}
-          <div className="card p-5">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5" /> Quick tips
-            </p>
-            <ul className="space-y-2.5">
-              {[
-                'Share what you\'re building',
-                'Ask questions or seek feedback',
-                'Celebrate others\' wins',
-                'Search for topics you care about',
-              ].map(tip => (
-                <li key={tip} className="flex items-start gap-2 text-sm text-slate-400">
-                  <span className="text-brand-400 mt-0.5">›</span>
-                  {tip}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Stack tags */}
-          <div className="card p-5">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Trending topics</p>
-            <div className="flex flex-wrap gap-2">
-              {['#react', '#python', '#fastapi', '#webdev', '#openai', '#beginners', '#portfolio', '#css', '#nodejs'].map(tag => (
-                <span key={tag} className="tag-pill cursor-pointer hover:bg-brand-900/60 transition-colors text-xs">{tag}</span>
+          <div className="card" style={{ padding:18 }}>
+            <p style={{ fontSize:12, fontWeight:600, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:12 }}>Trending topics</p>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+              {['#react','#python','#fastapi','#webdev','#beginners','#css','#nodejs','#openai'].map(t => (
+                <span key={t} className="badge" style={{ cursor:'pointer' }}>{t}</span>
               ))}
             </div>
           </div>
