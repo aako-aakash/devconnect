@@ -4,16 +4,19 @@ services:
     env: python
     region: oregon
     plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
-        sync: false
+        sync: false          # set manually in Render dashboard
       - key: SECRET_KEY
-        generateValue: true
+        generateValue: true  # Render auto-generates a secure secret
       - key: ALGORITHM
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
-        value: 10080
+        value: "10080"
       - key: FRONTEND_URL
-        sync: false
+        sync: false          # set manually: https://devconnect-steel.vercel.app
+      - key: EXTRA_ORIGINS
+        value: ""
