@@ -1,6 +1,6 @@
 import logging
 from typing import List
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -15,17 +15,15 @@ logger = logging.getLogger(__name__)
 
 def _post_out(post: Post, uid: int) -> PostOut:
     return PostOut(
-        id=post.id,
-        content=post.content,
-        created_at=post.created_at,
+        id=post.id, content=post.content, created_at=post.created_at,
         author=PostAuthor(id=post.author.id, name=post.author.name, avatar_url=post.author.avatar_url),
         like_count=len(post.likes),
         comment_count=len(post.comments),
-        liked_by_me=any(l.user_id == uid for l in post.likes),
+        liked_by_me=any(lk.user_id == uid for lk in post.likes),
     )
 
 
-def _comment_out(c: Comment) -> CommentOut:
+def _cmt_out(c: Comment) -> CommentOut:
     return CommentOut(
         id=c.id, content=c.content, created_at=c.created_at, post_id=c.post_id,
         author=PostAuthor(id=c.author.id, name=c.author.name, avatar_url=c.author.avatar_url),
@@ -35,7 +33,8 @@ def _comment_out(c: Comment) -> CommentOut:
 def get_feed(db: Session, uid: int, page: int = 1, per_page: int = 15) -> PaginatedPosts:
     offset = (page - 1) * per_page
     total  = db.query(func.count(Post.id)).scalar() or 0
-    posts  = db.query(Post).order_by(Post.created_at.desc()).offset(offset).limit(per_page).all()
+    posts  = (db.query(Post).order_by(Post.created_at.desc())
+                .offset(offset).limit(per_page).all())
     return PaginatedPosts(
         posts=[_post_out(p, uid) for p in posts],
         total=total, page=page, per_page=per_page,
@@ -62,7 +61,6 @@ def toggle_like(db: Session, post_id: int, uid: int) -> dict:
     post = db.query(Post).filter(Post.id == post_id).first()
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
-
     existing = db.query(Like).filter(Like.user_id == uid, Like.post_id == post_id).first()
     if existing:
         db.delete(existing); db.commit(); liked = False
@@ -73,7 +71,6 @@ def toggle_like(db: Session, post_id: int, uid: int) -> dict:
             db.add(Notification(recipient_id=post.user_id, actor_name=actor.name,
                                 action="liked your post", post_id=post_id))
             db.commit()
-
     db.refresh(post)
     return {"liked": liked, "like_count": len(post.likes)}
 
@@ -81,7 +78,7 @@ def toggle_like(db: Session, post_id: int, uid: int) -> dict:
 def get_comments(db: Session, post_id: int) -> List[CommentOut]:
     if not db.query(Post).filter(Post.id == post_id).first():
         raise HTTPException(status_code=404, detail="Post not found")
-    return [_comment_out(c) for c in
+    return [_cmt_out(c) for c in
             db.query(Comment).filter(Comment.post_id == post_id)
               .order_by(Comment.created_at.asc()).all()]
 
@@ -97,10 +94,10 @@ def add_comment(db: Session, post_id: int, data: CommentCreate, uid: int) -> Com
         db.add(Notification(recipient_id=post.user_id, actor_name=actor.name,
                             action="commented on your post", post_id=post_id))
         db.commit()
-    return _comment_out(c)
+    return _cmt_out(c)
 
 
 def search_posts(db: Session, q: str, uid: int) -> List[PostOut]:
-    posts = db.query(Post).filter(Post.content.ilike(f"%{q}%")) \
-               .order_by(Post.created_at.desc()).limit(50).all()
+    posts = (db.query(Post).filter(Post.content.ilike(f"%{q}%"))
+               .order_by(Post.created_at.desc()).limit(50).all())
     return [_post_out(p, uid) for p in posts]

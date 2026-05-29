@@ -1,10 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
-
 from pydantic import BaseModel, field_validator
 
-
-# ── Posts ─────────────────────────────────────────────────────────────────────
 
 class PostCreate(BaseModel):
     content: str
@@ -16,7 +13,7 @@ class PostCreate(BaseModel):
         if not v:
             raise ValueError("Post content must not be empty")
         if len(v) > 2000:
-            raise ValueError("Post content must not exceed 2000 characters")
+            raise ValueError("Post must not exceed 2000 characters")
         return v
 
 
@@ -24,7 +21,6 @@ class PostAuthor(BaseModel):
     id: int
     name: str
     avatar_url: Optional[str] = None
-
     model_config = {"from_attributes": True}
 
 
@@ -36,7 +32,6 @@ class PostOut(BaseModel):
     like_count: int = 0
     comment_count: int = 0
     liked_by_me: bool = False
-
     model_config = {"from_attributes": True}
 
 
@@ -47,8 +42,6 @@ class PaginatedPosts(BaseModel):
     per_page: int
     has_more: bool
 
-
-# ── Comments ──────────────────────────────────────────────────────────────────
 
 class CommentCreate(BaseModel):
     content: str
@@ -70,18 +63,13 @@ class CommentOut(BaseModel):
     created_at: datetime
     post_id: int
     author: PostAuthor
-
     model_config = {"from_attributes": True}
 
-
-# ── Likes ─────────────────────────────────────────────────────────────────────
 
 class LikeStatus(BaseModel):
     liked: bool
     like_count: int
 
-
-# ── Notifications ─────────────────────────────────────────────────────────────
 
 class NotificationOut(BaseModel):
     id: int
@@ -90,11 +78,8 @@ class NotificationOut(BaseModel):
     post_id: Optional[int] = None
     is_read: bool
     created_at: datetime
-
     model_config = {"from_attributes": True}
 
-
-# ── Generic ───────────────────────────────────────────────────────────────────
 
 class MessageResponse(BaseModel):
     message: str

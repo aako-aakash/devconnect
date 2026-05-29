@@ -21,7 +21,7 @@ def login(data: UserLogin, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserOut)
-def get_me(current_user: User = Depends(get_current_user)):
+def me(current_user: User = Depends(get_current_user)):
     return UserOut(
         id=current_user.id, name=current_user.name, email=current_user.email,
         bio=current_user.bio, avatar_url=current_user.avatar_url,

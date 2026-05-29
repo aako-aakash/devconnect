@@ -1,11 +1,9 @@
 from datetime import datetime
-
 from sqlalchemy import (
     Boolean, Column, DateTime, ForeignKey,
     Integer, String, Text, UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
-
 from app.db.database import Base
 
 
@@ -20,7 +18,6 @@ class User(Base):
     avatar_url    = Column(String(500), nullable=True)
     created_at    = Column(DateTime, default=datetime.utcnow)
 
-    # Relationships
     posts         = relationship("Post",         back_populates="author",    cascade="all, delete-orphan")
     likes         = relationship("Like",         back_populates="user",      cascade="all, delete-orphan")
     comments      = relationship("Comment",      back_populates="author",    cascade="all, delete-orphan")
@@ -73,7 +70,7 @@ class Notification(Base):
     id           = Column(Integer, primary_key=True, index=True)
     recipient_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     actor_name   = Column(String(100), nullable=False)
-    action       = Column(String(100), nullable=False)  # e.g. "liked your post"
+    action       = Column(String(100), nullable=False)
     post_id      = Column(Integer, nullable=True)
     is_read      = Column(Boolean, default=False, nullable=False)
     created_at   = Column(DateTime, default=datetime.utcnow)

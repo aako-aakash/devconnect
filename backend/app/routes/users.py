@@ -30,15 +30,18 @@ def mark_read(db: Session = Depends(get_db), u: User = Depends(get_current_user)
 
 
 @router.patch("/me/profile", response_model=UserOut)
-def update_me(data: UserUpdate, db: Session = Depends(get_db), u: User = Depends(get_current_user)):
+def update_me(data: UserUpdate,
+              db: Session = Depends(get_db), u: User = Depends(get_current_user)):
     return user_service.update_profile(db, u, data)
 
 
 @router.get("/{user_id}", response_model=UserProfile)
-def get_profile(user_id: int, db: Session = Depends(get_db), u: User = Depends(get_current_user)):
+def profile(user_id: int,
+            db: Session = Depends(get_db), u: User = Depends(get_current_user)):
     return user_service.get_user_profile(db, user_id)
 
 
 @router.get("/{user_id}/posts", response_model=List[PostOut])
-def get_posts(user_id: int, db: Session = Depends(get_db), u: User = Depends(get_current_user)):
+def user_posts(user_id: int,
+               db: Session = Depends(get_db), u: User = Depends(get_current_user)):
     return user_service.get_user_posts(db, user_id, u.id)

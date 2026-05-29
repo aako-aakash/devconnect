@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import Optional
-
 from pydantic import BaseModel, EmailStr, field_validator
 
 
@@ -15,13 +14,11 @@ class UserCreate(BaseModel):
         v = v.strip()
         if not v:
             raise ValueError("Name must not be empty")
-        if len(v) > 100:
-            raise ValueError("Name must not exceed 100 characters")
         return v
 
     @field_validator("password")
     @classmethod
-    def password_min_length(cls, v: str) -> str:
+    def password_length(cls, v: str) -> str:
         if len(v) < 6:
             raise ValueError("Password must be at least 6 characters")
         return v
@@ -37,15 +34,6 @@ class UserUpdate(BaseModel):
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
 
-    @field_validator("name")
-    @classmethod
-    def name_not_empty(cls, v: Optional[str]) -> Optional[str]:
-        if v is not None:
-            v = v.strip()
-            if not v:
-                raise ValueError("Name must not be empty")
-        return v
-
 
 class UserOut(BaseModel):
     id: int
@@ -60,7 +48,6 @@ class UserOut(BaseModel):
 
 
 class UserProfile(UserOut):
-    """Extended user profile (same fields, semantic alias)."""
     pass
 
 

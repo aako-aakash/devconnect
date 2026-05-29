@@ -15,8 +15,8 @@ router = APIRouter(prefix="/posts", tags=["Posts"])
 
 
 @router.get("/feed", response_model=PaginatedPosts)
-def get_feed(page: int = Query(1, ge=1), per_page: int = Query(15, ge=1, le=50),
-             db: Session = Depends(get_db), u: User = Depends(get_current_user)):
+def feed(page: int = Query(1, ge=1), per_page: int = Query(15, ge=1, le=50),
+         db: Session = Depends(get_db), u: User = Depends(get_current_user)):
     return post_service.get_feed(db, u.id, page, per_page)
 
 
@@ -27,23 +27,27 @@ def search(q: str = Query(..., min_length=1),
 
 
 @router.post("/", response_model=PostOut, status_code=201)
-def create_post(data: PostCreate, db: Session = Depends(get_db), u: User = Depends(get_current_user)):
+def create(data: PostCreate,
+           db: Session = Depends(get_db), u: User = Depends(get_current_user)):
     return post_service.create_post(db, data, u.id)
 
 
 @router.delete("/{post_id}", response_model=MessageResponse)
-def delete_post(post_id: int, db: Session = Depends(get_db), u: User = Depends(get_current_user)):
+def delete(post_id: int,
+           db: Session = Depends(get_db), u: User = Depends(get_current_user)):
     post_service.delete_post(db, post_id, u.id)
     return {"message": "Deleted"}
 
 
 @router.post("/{post_id}/like", response_model=LikeStatus)
-def like(post_id: int, db: Session = Depends(get_db), u: User = Depends(get_current_user)):
+def like(post_id: int,
+         db: Session = Depends(get_db), u: User = Depends(get_current_user)):
     return post_service.toggle_like(db, post_id, u.id)
 
 
 @router.get("/{post_id}/comments", response_model=List[CommentOut])
-def get_comments(post_id: int, db: Session = Depends(get_db), u: User = Depends(get_current_user)):
+def comments(post_id: int,
+             db: Session = Depends(get_db), u: User = Depends(get_current_user)):
     return post_service.get_comments(db, post_id)
 
 
