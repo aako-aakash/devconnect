@@ -1,7 +1,6 @@
 import logging
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
-
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -11,18 +10,13 @@ class Base(DeclarativeBase):
     pass
 
 
-def _build_engine():
+def _make_engine():
     url = settings.DATABASE_URL
-
-    # Neon gives postgres:// — SQLAlchemy 2 needs postgresql://
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
-
     connect_args = {}
-    # Force SSL for Neon / any cloud Postgres
-    if "neon.tech" in url or "sslmode" not in url:
+    if "neon.tech" in url or "sslmode=require" in url:
         connect_args["sslmode"] = "require"
-
     return create_engine(
         url,
         connect_args=connect_args,
@@ -33,7 +27,7 @@ def _build_engine():
     )
 
 
-engine = _build_engine()
+engine       = _make_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -45,13 +39,13 @@ def get_db():
         db.close()
 
 
-def create_tables() -> None:
-    import app.models.models  # noqa — registers all ORM classes
+def create_tables():
+    import app.models.models  # noqa
     try:
         Base.metadata.create_all(bind=engine)
-        logger.info("✅  Database tables ready.")
-    except Exception as exc:
-        logger.error(f"❌  create_tables() failed: {exc}")
+        logger.info("✅ Tables ready.")
+    except Exception as e:
+        logger.error("❌ create_tables failed: %s", e)
         raise
 
 
@@ -60,5 +54,5 @@ def check_db() -> dict:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         return {"db": "connected"}
-    except Exception as exc:
-        return {"db": "error", "detail": str(exc)}
+    except Exception as e:
+        return {"db": "error", "detail": str(e)}

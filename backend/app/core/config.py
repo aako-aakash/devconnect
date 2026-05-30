@@ -4,23 +4,19 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # Required
     DATABASE_URL: str
 
-    # JWT
-    SECRET_KEY: str = "dev-secret-change-in-production-min-32-chars"
+    SECRET_KEY: str = "dev-secret-change-in-production-use-32-plus-chars"
     ALGORITHM: str  = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080   # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080
 
-    # CORS
     FRONTEND_URL: str  = "http://localhost:5173"
-    EXTRA_ORIGINS: str = ""           # comma-separated extra origins
+    EXTRA_ORIGINS: str = ""
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
-    @property
     def all_origins(self) -> List[str]:
-        origins = [
+        base = [
             self.FRONTEND_URL.strip(),
             "http://localhost:5173",
             "http://localhost:3000",
@@ -30,8 +26,8 @@ class Settings(BaseSettings):
             for o in self.EXTRA_ORIGINS.split(","):
                 o = o.strip()
                 if o:
-                    origins.append(o)
-        return list(set(origins))
+                    base.append(o)
+        return list(set(base))
 
 
 @lru_cache()

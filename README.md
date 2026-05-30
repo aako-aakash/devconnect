@@ -182,7 +182,7 @@ CREATE TABLE notifications (
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/aako-aakash/devconnect.git
+git clone https://github.com/YOUR_USERNAME/devconnect.git
 cd devconnect
 ```
 
@@ -345,8 +345,4 @@ MIT — build on it, learn from it, ship your own version.
 
 ---
 
-
-## Author :
-
-# AAKASH 
 > Built with ❤️ as a full-stack learning project. Star ⭐ if this helped you!

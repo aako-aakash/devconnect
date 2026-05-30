@@ -11,10 +11,9 @@ class UserCreate(BaseModel):
     @field_validator("name")
     @classmethod
     def name_not_empty(cls, v: str) -> str:
-        v = v.strip()
-        if not v:
+        if not v.strip():
             raise ValueError("Name must not be empty")
-        return v
+        return v.strip()
 
     @field_validator("password")
     @classmethod
@@ -43,7 +42,6 @@ class UserOut(BaseModel):
     avatar_url: Optional[str] = None
     created_at: datetime
     post_count: int = 0
-
     model_config = {"from_attributes": True}
 
 
