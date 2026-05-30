@@ -346,3 +346,6 @@ MIT — build on it, learn from it, ship your own version.
 ---
 
 > Built with ❤️ as a full-stack learning project. Star ⭐ if this helped you!
+
+## Author :
+# AAKASH
