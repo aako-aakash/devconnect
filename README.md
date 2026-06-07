@@ -182,7 +182,7 @@ CREATE TABLE notifications (
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/devconnect.git
+git clone https://github.com/aako-aakash/devconnect.git
 cd devconnect
 ```
 
@@ -347,5 +347,12 @@ MIT — build on it, learn from it, ship your own version.
 
 > Built with ❤️ as a full-stack learning project. Star ⭐ if this helped you!
 
-## Author :
-# AAKASH
+## 👨‍💻 Author
+
+**Akash Kumar Saw**
+
+AI & Machine Learning Enthusiast | Software Engineer
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Aakash%20Kumar%20Saw-blue?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/akash-kumar-saw-bb1630258/)
+
+Feel free to connect with me on LinkedIn and explore my other projects.
