@@ -8,22 +8,17 @@ from app.core.config import settings
 from app.db.database import check_db, create_tables
 from app.routes import auth, posts, users
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)-8s %(name)s - %(message)s",
-)
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s %(levelname)-8s %(name)s — %(message)s")
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="DevConnect API",
-    description="Social platform for student developers.",
+    description="Social platform for student developers. Protected routes require `Authorization: Bearer <token>`.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )
-
-# ── CORS ──────────────────────────────────────────────────────────────────────
-# allow_origin_regex covers ALL *.vercel.app preview URLs automatically
 
 app.add_middleware(
     CORSMiddleware,
@@ -39,13 +34,11 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(auth.router,  prefix="/api")
 app.include_router(posts.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
 
 
-# ── Startup ───────────────────────────────────────────────────────────────────
 @app.on_event("startup")
 def on_startup():
     logger.info("Starting DevConnect API")
@@ -57,10 +50,9 @@ def on_startup():
         logger.error("Startup DB error: %s", e)
 
 
-# ── Health ─────────────────────────────────────────────────────────────────────
 @app.get("/", tags=["Health"])
 def root():
-    return {"status": "ok", "message": "DevConnect API", "docs": "/docs"}
+    return {"status": "ok", "message": "DevConnect API 🚀", "docs": "/docs"}
 
 
 @app.get("/health", tags=["Health"])
@@ -75,7 +67,7 @@ def debug():
     safe = re.sub(r"://([^:]+):([^@]+)@", r"://<user>:<pass>@", raw)
     return {
         "db":           check_db(),
-        "database_url": safe or "NOT SET",
+        "database_url": safe or "NOT SET ⚠️",
         "frontend_url": settings.FRONTEND_URL,
         "all_origins":  settings.all_origins(),
         "secret_ok":    len(settings.SECRET_KEY) >= 32,

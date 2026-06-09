@@ -17,14 +17,9 @@ def _make_engine():
     connect_args = {}
     if "neon.tech" in url or "sslmode=require" in url:
         connect_args["sslmode"] = "require"
-    return create_engine(
-        url,
-        connect_args=connect_args,
-        pool_pre_ping=True,
-        pool_recycle=300,
-        pool_size=5,
-        max_overflow=10,
-    )
+    return create_engine(url, connect_args=connect_args,
+                         pool_pre_ping=True, pool_recycle=300,
+                         pool_size=5, max_overflow=10)
 
 
 engine       = _make_engine()

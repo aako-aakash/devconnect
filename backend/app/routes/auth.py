@@ -8,13 +8,16 @@ from app.services.auth_service import login_user, register_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+
 @router.post("/signup", response_model=TokenResponse, status_code=201)
 def signup(data: UserCreate, db: Session = Depends(get_db)):
     return register_user(db, data)
 
+
 @router.post("/login", response_model=TokenResponse)
 def login(data: UserLogin, db: Session = Depends(get_db)):
     return login_user(db, data)
+
 
 @router.get("/me", response_model=UserOut)
 def me(current_user: User = Depends(get_current_user)):

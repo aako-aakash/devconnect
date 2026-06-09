@@ -8,16 +8,14 @@ from app.schemas.user import UserOut, UserProfile, UserUpdate
 
 def _u(u: User) -> UserOut:
     return UserOut(id=u.id, name=u.name, email=u.email, bio=u.bio,
-                   avatar_url=u.avatar_url, created_at=u.created_at,
-                   post_count=len(u.posts))
+                   avatar_url=u.avatar_url, created_at=u.created_at, post_count=len(u.posts))
 
 
 def get_user_profile(db: Session, user_id: int) -> UserProfile:
     u = db.query(User).filter(User.id == user_id).first()
     if not u: raise HTTPException(404, "User not found")
     return UserProfile(id=u.id, name=u.name, email=u.email, bio=u.bio,
-                       avatar_url=u.avatar_url, created_at=u.created_at,
-                       post_count=len(u.posts))
+                       avatar_url=u.avatar_url, created_at=u.created_at, post_count=len(u.posts))
 
 
 def get_user_posts(db: Session, user_id: int, current_uid: int) -> List[PostOut]:
@@ -49,7 +47,8 @@ def get_notifications(db: Session, uid: int) -> List[NotificationOut]:
             .order_by(Notification.created_at.desc()).limit(50).all()]
 
 
-def mark_notifications_read(db: Session, uid: int) -> None:
-    db.query(Notification).filter(Notification.recipient_id == uid,
-                                  Notification.is_read == False).update({"is_read": True})  # noqa
+def mark_notifications_read(db: Session, uid: int):
+    db.query(Notification).filter(
+        Notification.recipient_id == uid, Notification.is_read == False  # noqa
+    ).update({"is_read": True})
     db.commit()

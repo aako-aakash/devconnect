@@ -1,14 +1,7 @@
 __pycache__
 *.pyc
-*.pyo
-*.pyd
-.Python
 .env
 .venv
 venv/
-env/
 *.egg-info/
 .git
-.gitignore
-.DS_Store
-*.log

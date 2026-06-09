@@ -8,12 +8,10 @@ class PostCreate(BaseModel):
 
     @field_validator("content")
     @classmethod
-    def content_valid(cls, v: str) -> str:
+    def content_valid(cls, v):
         v = v.strip()
-        if not v:
-            raise ValueError("Post content must not be empty")
-        if len(v) > 2000:
-            raise ValueError("Post must not exceed 2000 characters")
+        if not v: raise ValueError("Post content must not be empty")
+        if len(v) > 2000: raise ValueError("Post must not exceed 2000 characters")
         return v
 
 
@@ -48,12 +46,10 @@ class CommentCreate(BaseModel):
 
     @field_validator("content")
     @classmethod
-    def content_valid(cls, v: str) -> str:
+    def content_valid(cls, v):
         v = v.strip()
-        if not v:
-            raise ValueError("Comment must not be empty")
-        if len(v) > 500:
-            raise ValueError("Comment must not exceed 500 characters")
+        if not v: raise ValueError("Comment must not be empty")
+        if len(v) > 500: raise ValueError("Comment must not exceed 500 characters")
         return v
 
 
