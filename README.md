@@ -5,10 +5,10 @@
 ```
 ██████╗ ███████╗██╗   ██╗ ██████╗ ██████╗ ███╗   ██╗███╗   ██╗███████╗ ██████╗████████╗
 ██╔══██╗██╔════╝██║   ██║██╔════╝██╔═══██╗████╗  ██║████╗  ██║██╔════╝██╔════╝╚══██╔══╝
-██║  ██║█████╗  ██║   ██║██║     ██║   ██║██╔██╗ ██║██╔██╗ ██║█████╗  ██║        ██║   
-██║  ██║██╔══╝  ╚██╗ ██╔╝██║     ██║   ██║██║╚██╗██║██║╚██╗██║██╔══╝  ██║        ██║   
-██████╔╝███████╗ ╚████╔╝ ╚██████╗╚██████╔╝██║ ╚████║██║ ╚████║███████╗╚██████╗   ██║   
-╚═════╝ ╚══════╝  ╚═══╝   ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝ ╚═════╝   ╚═╝   
+██║  ██║█████╗  ██║   ██║██║     ██║   ██║██╔██╗ ██║██╔██╗ ██║█████╗  ██║        ██║
+██║  ██║██╔══╝  ╚██╗ ██╔╝██║     ██║   ██║██║╚██╗██║██║╚██╗██║██╔══╝  ██║        ██║
+██████╔╝███████╗ ╚████╔╝ ╚██████╗╚██████╔╝██║ ╚████║██║ ╚████║███████╗╚██████╗   ██║
+╚═════╝ ╚══════╝  ╚═══╝   ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝ ╚═════╝   ╚═╝
 ```
 
 ### 🚀 A full-stack social platform for student developers
@@ -385,12 +385,12 @@ Every `git push origin main` → Vercel rebuilds frontend (~30s) + Render rebuil
 
 <div align="center">
 
-**Built with ❤️ by [aako-aakash](https://github.com/aako-aakash)**
+**Built  by [aako-aakash](https://github.com/aako-aakash)**
 
 Powered by **Skyward** 🚀
 
 [![GitHub](https://img.shields.io/badge/GitHub-Follow-181717?style=for-the-badge&logo=github)](https://github.com/aako-aakash)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin)](https://linkedin.com/in/aako-aakash)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/akash-kumar-saw-bb1630258)
 
 <br/>
 
