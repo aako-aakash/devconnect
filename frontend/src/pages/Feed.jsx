@@ -200,7 +200,7 @@ export default function Feed() {
           {/* Powered by */}
           <div style={{ textAlign:'center', padding:'10px 0' }}>
             <span style={{ fontSize:11, color:'var(--t3)' }}>Powered by </span>
-            <span style={{ fontSize:11, fontWeight:700, background:'linear-gradient(90deg,#6366f1,#a78bfa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>Skyward</span>
+            <span style={{ fontSize:11, fontWeight:700, background:'linear-gradient(90deg,#6366f1,#a78bfa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>skyward</span>
           </div>
         </div>
       </div>
