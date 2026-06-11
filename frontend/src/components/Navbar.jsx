@@ -57,6 +57,18 @@ export default function Navbar() {
 
   const isActive = p => loc.pathname === p
 
+  // Clicking Feed or logo when already on /feed → scroll to top + reload
+  const handleFeedClick = (e) => {
+    e.preventDefault()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    if (loc.pathname === '/feed') {
+      window.location.reload()
+    } else {
+      nav('/feed')
+    }
+    setMobileOpen(false)
+  }
+
   const dropSx = {
     position:'absolute', top:'calc(100% + 10px)', right:0,
     background:'rgba(8,12,20,0.97)',
@@ -70,14 +82,14 @@ export default function Navbar() {
     <>
       <nav className="navbar">
         {/* Logo */}
-        <Link to="/feed" style={{ display:'flex', alignItems:'center', gap:9, textDecoration:'none', flexShrink:0 }}>
+        <a href="/feed" onClick={handleFeedClick} style={{ display:'flex', alignItems:'center', gap:9, textDecoration:'none', flexShrink:0, cursor:'pointer' }}>
           <div style={{ width:34, height:34, borderRadius:10, background:'linear-gradient(135deg,#6366f1,#7c3aed)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 0 14px rgba(99,102,241,0.45)' }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
               <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
             </svg>
           </div>
           <span style={{ fontWeight:800, fontSize:17, letterSpacing:'-0.4px', display:'none' }} className="text-grad" id="nav-logo-text">DevConnect</span>
-        </Link>
+        </a>
 
         {/* Search */}
         <div ref={searchRef} style={{ position:'relative', flex:1, maxWidth:360 }}>
@@ -131,12 +143,13 @@ export default function Navbar() {
         {/* Desktop right */}
         <div style={{ display:'flex', alignItems:'center', gap:4, marginLeft:'auto' }} id="nav-desktop">
           {/* Feed link */}
-          <Link to="/feed" style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 13px', borderRadius:10, textDecoration:'none', fontSize:13, fontWeight:500, transition:'all .15s', color: isActive('/feed') ? 'var(--accent2)' : 'var(--text2)', background: isActive('/feed') ? 'rgba(99,102,241,0.1)' : 'transparent' }}
-            onMouseOver={e => { if(!isActive('/feed')) { e.currentTarget.style.color='var(--text1)'; e.currentTarget.style.background='rgba(99,102,241,0.07)' }}}
-            onMouseOut={e => { if(!isActive('/feed')) { e.currentTarget.style.color='var(--text2)'; e.currentTarget.style.background='transparent' }}}>
+          <a href="/feed" onClick={handleFeedClick}
+            style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 13px', borderRadius:10, textDecoration:'none', fontSize:13, fontWeight:500, transition:'all .15s', cursor:'pointer', color: isActive('/feed') ? 'var(--accent2)' : 'var(--t2)', background: isActive('/feed') ? 'rgba(99,102,241,0.1)' : 'transparent' }}
+            onMouseOver={e => { if(!isActive('/feed')) { e.currentTarget.style.color='var(--t1)'; e.currentTarget.style.background='rgba(99,102,241,0.07)' }}}
+            onMouseOut={e => { if(!isActive('/feed')) { e.currentTarget.style.color='var(--t2)'; e.currentTarget.style.background='transparent' }}}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             Feed
-          </Link>
+          </a>
 
           {/* Notifications */}
           <div ref={notifRef} style={{ position:'relative' }}>
@@ -214,10 +227,10 @@ export default function Navbar() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div style={{ background:'rgba(8,12,20,0.98)', borderBottom:'1px solid rgba(99,102,241,0.12)', padding:'12px 16px', backdropFilter:'blur(20px)' }}>
-          <Link to="/feed" onClick={() => setMobileOpen(false)}
-            style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderRadius:12, textDecoration:'none', fontSize:14, fontWeight:500, color: isActive('/feed') ? 'var(--accent2)' : 'var(--text2)', background: isActive('/feed') ? 'rgba(99,102,241,0.1)' : 'transparent', marginBottom:4 }}>
+          <a href="/feed" onClick={handleFeedClick}
+            style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderRadius:12, textDecoration:'none', fontSize:14, fontWeight:500, cursor:'pointer', color: isActive('/feed') ? 'var(--accent2)' : 'var(--t2)', background: isActive('/feed') ? 'rgba(99,102,241,0.1)' : 'transparent', marginBottom:4 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> Feed
-          </Link>
+          </a>
           <Link to={`/profile/${user?.id}`} onClick={() => setMobileOpen(false)}
             style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderRadius:12, textDecoration:'none', fontSize:14, fontWeight:500, color:'var(--text2)', marginBottom:4 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg> Profile

@@ -1,6 +1,19 @@
-import { Link } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 export default function Footer() {
+  const nav = useNavigate()
+  const loc = useLocation()
+
+  const handleFeedClick = (e) => {
+    e.preventDefault()
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    if (loc.pathname === '/feed') {
+      window.location.reload()
+    } else {
+      nav('/feed')
+    }
+  }
+
   return (
     <footer style={{ borderTop:'1px solid rgba(99,102,241,0.1)', background:'rgba(8,12,20,0.85)', backdropFilter:'blur(20px)', padding:'28px 24px', marginTop:'auto' }}>
       <div style={{ maxWidth:880, margin:'0 auto', display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between', gap:16 }}>
@@ -17,7 +30,7 @@ export default function Footer() {
             <span style={{ fontSize:12, color:'var(--t3)', marginLeft:6 }}>
               Powered by{' '}
               <span style={{ fontWeight:700, background:'linear-gradient(90deg,#6366f1,#a78bfa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>
-                Skyward
+                skyward
               </span>
             </span>
           </div>
@@ -25,15 +38,24 @@ export default function Footer() {
 
         {/* Nav links */}
         <div style={{ display:'flex', gap:18, fontSize:13 }}>
-          {[['Feed','/feed'],['Live Demo','https://devconnect-steel.vercel.app'],['API Docs','https://devconnect-api-pgg4.onrender.com/docs']].map(([label, href]) => (
-            href.startsWith('/') ? (
-              <Link key={label} to={href} style={{ color:'var(--t3)', textDecoration:'none' }}
-                onMouseOver={e=>e.target.style.color='var(--accent2)'} onMouseOut={e=>e.target.style.color='var(--t3)'}>{label}</Link>
-            ) : (
-              <a key={label} href={href} target="_blank" rel="noreferrer" style={{ color:'var(--t3)', textDecoration:'none' }}
-                onMouseOver={e=>e.target.style.color='var(--accent2)'} onMouseOut={e=>e.target.style.color='var(--t3)'}>{label}</a>
-            )
-          ))}
+          <a href="/feed" onClick={handleFeedClick}
+            style={{ color:'var(--t3)', textDecoration:'none', cursor:'pointer' }}
+            onMouseOver={e=>e.target.style.color='var(--accent2)'}
+            onMouseOut={e=>e.target.style.color='var(--t3)'}>
+            Feed
+          </a>
+          <a href="https://devconnect-steel.vercel.app" target="_blank" rel="noreferrer"
+            style={{ color:'var(--t3)', textDecoration:'none' }}
+            onMouseOver={e=>e.target.style.color='var(--accent2)'}
+            onMouseOut={e=>e.target.style.color='var(--t3)'}>
+            Live Demo
+          </a>
+          <a href="https://devconnect-api-pgg4.onrender.com/docs" target="_blank" rel="noreferrer"
+            style={{ color:'var(--t3)', textDecoration:'none' }}
+            onMouseOver={e=>e.target.style.color='var(--accent2)'}
+            onMouseOut={e=>e.target.style.color='var(--t3)'}>
+            API Docs
+          </a>
         </div>
 
         {/* Social */}
@@ -45,9 +67,9 @@ export default function Footer() {
             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 0C5.37 0 0 5.373 0 12c0 5.303 3.438 9.8 8.205 11.387.6.113.82-.258.82-.577v-2.165c-3.338.726-4.042-1.416-4.042-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.729.083-.729 1.205.084 1.84 1.237 1.84 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.605-2.665-.3-5.467-1.332-5.467-5.931 0-1.31.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.3 1.23A11.51 11.51 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.29-1.552 3.297-1.23 3.297-1.23.653 1.652.242 2.873.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.61-2.807 5.628-5.48 5.921.43.372.823 1.102.823 2.222v3.293c0 .322.216.694.825.576C20.565 21.796 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
             </svg>
-            aako-aakash
+            Github
           </a>
-          <a href="https://www.linkedin.com/in/akash-kumar-saw-bb1630258" target="_blank" rel="noreferrer"
+          <a href="https://linkedin.com/in/aako-aakash" target="_blank" rel="noreferrer"
             style={{ display:'flex', alignItems:'center', gap:6, background:'rgba(14,118,232,0.08)', border:'1px solid rgba(14,118,232,0.18)', borderRadius:9, padding:'6px 12px', color:'#60a5fa', textDecoration:'none', fontSize:12, fontWeight:600, transition:'all .15s' }}
             onMouseOver={e=>{ e.currentTarget.style.background='rgba(14,118,232,0.16)'; e.currentTarget.style.borderColor='rgba(14,118,232,0.38)' }}
             onMouseOut={e=>{ e.currentTarget.style.background='rgba(14,118,232,0.08)'; e.currentTarget.style.borderColor='rgba(14,118,232,0.18)' }}>

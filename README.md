@@ -5,10 +5,10 @@
 ```
 ██████╗ ███████╗██╗   ██╗ ██████╗ ██████╗ ███╗   ██╗███╗   ██╗███████╗ ██████╗████████╗
 ██╔══██╗██╔════╝██║   ██║██╔════╝██╔═══██╗████╗  ██║████╗  ██║██╔════╝██╔════╝╚══██╔══╝
-██║  ██║█████╗  ██║   ██║██║     ██║   ██║██╔██╗ ██║██╔██╗ ██║█████╗  ██║        ██║
-██║  ██║██╔══╝  ╚██╗ ██╔╝██║     ██║   ██║██║╚██╗██║██║╚██╗██║██╔══╝  ██║        ██║
-██████╔╝███████╗ ╚████╔╝ ╚██████╗╚██████╔╝██║ ╚████║██║ ╚████║███████╗╚██████╗   ██║
-╚═════╝ ╚══════╝  ╚═══╝   ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝ ╚═════╝   ╚═╝
+██║  ██║█████╗  ██║   ██║██║     ██║   ██║██╔██╗ ██║██╔██╗ ██║█████╗  ██║        ██║   
+██║  ██║██╔══╝  ╚██╗ ██╔╝██║     ██║   ██║██║╚██╗██║██║╚██╗██║██╔══╝  ██║        ██║   
+██████╔╝███████╗ ╚████╔╝ ╚██████╗╚██████╔╝██║ ╚████║██║ ╚████║███████╗╚██████╗   ██║   
+╚═════╝ ╚══════╝  ╚═══╝   ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝ ╚═════╝   ╚═╝   
 ```
 
 ### 🚀 A full-stack social platform for student developers
@@ -57,7 +57,7 @@
 │  • Like alerts   │  • Search users  │  • Mobile-first design    │
 │  • Comment alerts│  • Search posts  │  • Glassmorphism cards    │
 │  • Unread badge  │  • Live results  │  • Premium dark theme     │
-│  • Mark as read  │  • Debounced     │  • Powered by Skyward     │
+│  • Mark as read  │  • Debounced     │  • Powered by skyward     │
 └──────────────────┴──────────────────┴───────────────────────────┘
 ```
 
@@ -258,7 +258,7 @@ devconnect/
         ├── components/
         │   ├── Navbar.jsx           ← Search, notifications, user menu
         │   ├── PostCard.jsx         ← Like, comment, delete
-        │   ├── Footer.jsx           ← Skyward branding + social links
+        │   ├── Footer.jsx           ← skyward branding + social links
         │   └── helpers.jsx          ← Avatar, Spinner, SkeletonCard
         └── pages/
             ├── Login.jsx            ← Split-panel login
@@ -385,12 +385,12 @@ Every `git push origin main` → Vercel rebuilds frontend (~30s) + Render rebuil
 
 <div align="center">
 
-**Built  by [aako-aakash](https://github.com/aako-aakash)**
+**Built with ❤️ by [AKASH](https://github.com/aako-aakash)**
 
-Powered by **Skyward** 🚀
+Powered by **skyward** 🚀
 
 [![GitHub](https://img.shields.io/badge/GitHub-Follow-181717?style=for-the-badge&logo=github)](https://github.com/aako-aakash)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/akash-kumar-saw-bb1630258)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin)](https://linkedin.com/in/aako-aakash)
 
 <br/>
 
