@@ -26,6 +26,8 @@
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
 ![Render](https://img.shields.io/badge/Render-46E3B7?style=flat-square&logo=render&logoColor=black)
+![Tests](https://img.shields.io/github/actions/workflow/status/aako-aakash/devconnect/backend-tests.yml?style=flat-square&label=tests&logo=pytest&logoColor=white)
+![Coverage](https://img.shields.io/badge/coverage-92%25-success?style=flat-square)
 
 </div>
 
@@ -321,6 +323,49 @@ npm run dev
 
 ---
 
+## 🧪 Testing
+
+The backend has a **35-test pytest suite** covering authentication, posts, likes, comments, notifications, and authorization — running against an isolated **in-memory SQLite database** (production data is never touched).
+
+```bash
+cd backend
+
+# Install test dependencies (already in requirements.txt)
+pip install -r requirements.txt
+
+# Run all tests
+pytest
+
+# Run with coverage report
+pip install pytest-cov
+pytest --cov=app --cov-report=term-missing
+```
+
+```
+✅ 35 passed in ~10s
+📊 92% code coverage
+```
+
+### What's tested
+
+| Area | Coverage |
+|---|---|
+| **Signup** | Success, duplicate email (409), short password (422), invalid email (422), password hashing |
+| **Login** | Success, wrong password (401), nonexistent user (401) |
+| **Posts** | Create, validation (empty/too long), feed pagination & ordering |
+| **Ownership** | Delete own post ✅, delete other's post → 403 ❌ |
+| **Likes** | Toggle like/unlike, duplicate-like prevention, `liked_by_me` flag |
+| **Comments** | Create, list ordering, validation |
+| **Notifications** | Created on like/comment, self-actions excluded, mark-as-read |
+| **Search** | Posts by content, users by name |
+| **Auth guards** | All protected routes reject missing/invalid tokens |
+
+### Continuous Integration
+
+Every push to `main` automatically runs the full test suite via **GitHub Actions** (`.github/workflows/backend-tests.yml`). If any test fails, the commit is flagged red on GitHub — broken code never silently ships.
+
+---
+
 ## ☁️ Deployment
 
 ### Database — Neon (free tier)
@@ -385,7 +430,7 @@ Every `git push origin main` → Vercel rebuilds frontend (~30s) + Render rebuil
 
 <div align="center">
 
-**Built  by [AKASH](https://github.com/aako-aakash)**
+**Built by [AKASH](https://github.com/aako-aakash)**
 
 Powered by **skyward** 🚀
 

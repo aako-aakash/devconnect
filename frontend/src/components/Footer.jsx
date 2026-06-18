@@ -44,18 +44,6 @@ export default function Footer() {
             onMouseOut={e=>e.target.style.color='var(--t3)'}>
             Feed
           </a>
-          <a href="https://devconnect-steel.vercel.app" target="_blank" rel="noreferrer"
-            style={{ color:'var(--t3)', textDecoration:'none' }}
-            onMouseOver={e=>e.target.style.color='var(--accent2)'}
-            onMouseOut={e=>e.target.style.color='var(--t3)'}>
-            Live Demo
-          </a>
-          <a href="https://devconnect-api-pgg4.onrender.com/docs" target="_blank" rel="noreferrer"
-            style={{ color:'var(--t3)', textDecoration:'none' }}
-            onMouseOver={e=>e.target.style.color='var(--accent2)'}
-            onMouseOut={e=>e.target.style.color='var(--t3)'}>
-            API Docs
-          </a>
         </div>
 
         {/* Social */}

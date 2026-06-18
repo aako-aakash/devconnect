@@ -1,5 +1,6 @@
 import logging
 import re
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,12 +13,31 @@ logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)-8s %(name)s — %(message)s")
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # ── Startup ──────────────────────────────────────────────────────────────
+    logger.info("Starting DevConnect API")
+    logger.info("FRONTEND_URL : %s", settings.FRONTEND_URL)
+    logger.info("All origins  : %s", settings.all_origins())
+    try:
+        create_tables()
+    except Exception as e:
+        logger.error("Startup DB error: %s", e)
+
+    yield  # ── App runs here ──────────────────────────────────────────────────
+
+    # ── Shutdown (nothing to clean up currently) ────────────────────────────
+    logger.info("Shutting down DevConnect API")
+
+
 app = FastAPI(
     title="DevConnect API",
     description="Social platform for student developers. Protected routes require `Authorization: Bearer <token>`.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -37,17 +57,6 @@ app.add_middleware(
 app.include_router(auth.router,  prefix="/api")
 app.include_router(posts.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
-
-
-@app.on_event("startup")
-def on_startup():
-    logger.info("Starting DevConnect API")
-    logger.info("FRONTEND_URL : %s", settings.FRONTEND_URL)
-    logger.info("All origins  : %s", settings.all_origins())
-    try:
-        create_tables()
-    except Exception as e:
-        logger.error("Startup DB error: %s", e)
 
 
 @app.get("/", tags=["Health"])
