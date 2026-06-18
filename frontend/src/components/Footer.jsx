@@ -36,16 +36,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Nav links */}
-        <div style={{ display:'flex', gap:18, fontSize:13 }}>
-          <a href="/feed" onClick={handleFeedClick}
-            style={{ color:'var(--t3)', textDecoration:'none', cursor:'pointer' }}
-            onMouseOver={e=>e.target.style.color='var(--accent2)'}
-            onMouseOut={e=>e.target.style.color='var(--t3)'}>
-            Feed
-          </a>
-        </div>
-
         {/* Social */}
         <div style={{ display:'flex', gap:8 }}>
           <a href="https://github.com/aako-aakash" target="_blank" rel="noreferrer"
