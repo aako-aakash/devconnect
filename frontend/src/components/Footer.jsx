@@ -16,7 +16,7 @@ export default function Footer() {
 
   return (
     <footer style={{ borderTop:'1px solid rgba(99,102,241,0.1)', background:'rgba(8,12,20,0.85)', backdropFilter:'blur(20px)', padding:'28px 24px', marginTop:'auto' }}>
-      <div style={{ maxWidth:880, margin:'0 auto', display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between', gap:16 }}>
+      <div style={{ maxWidth:880, margin:'0 auto', display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between'}}>
 
         {/* Branding */}
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
